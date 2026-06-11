@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1A5276">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Leo's Receipts">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Leo's Receipt Tracker</title>
+<style>
+  :root {
+    --blue: #1A5276;
+    --blue-dark: #154360;
+    --blue-light: #D6EAF8;
+    --green: #1E8449;
+    --green-light: #D5F5E3;
+    --gray: #F2F3F4;
+    --mid-gray: #BDC3C7;
+    --danger: #E74C3C;
+    --text: #1a1a1a;
+    --text-muted: #888;
+    --border: #e0e0e0;
+    --white: #fff;
+    --radius: 12px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: var(--text); }
+
+  /* ── SCREENS ── */
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; background: #f0f2f5; }
+  .screen.hidden { display: none; }
+
+  /* ── PIN SCREEN ── */
+  #pinScreen { background: var(--blue); align-items: center; justify-content: center; gap: 0; }
+  .pin-logo { font-size: 48px; margin-bottom: 8px; }
+  .pin-title { color: white; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .pin-sub { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 40px; }
+  .pin-dots { display: flex; gap: 16px; margin-bottom: 32px; }
+  .pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: transparent; transition: background 0.15s; }
+  .pin-dot.filled { background: white; border-color: white; }
+  .pin-dot.error { background: var(--danger); border-color: var(--danger); }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 14px; }
+  .pin-key { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.15); border: none; color: white; font-size: 24px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.1s; }
+  .pin-key:active { background: rgba(255,255,255,0.35); transform: scale(0.94); }
+  .pin-key.del { font-size: 20px; }
+  .pin-key.empty { background: transparent; pointer-events: none; }
+  .pin-error { color: rgba(255,100,100,0.9); font-size: 13px; margin-top: -20px; margin-bottom: 8px; height: 18px; }
+  .pin-setup-hint { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 24px; text-align: center; max-width: 220px; }
+
+  /* ── HEADER ── */
+  .app-header { background: var(--blue); color: white; padding: 12px 16px 12px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+  .app-header h1 { font-size: 17px; font-weight: 700; }
+  .app-header span { font-size: 12px; opacity: 0.75; display: block; margin-top: 1px; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn { background: rgba(255,255,255,0.15); border: none; color: white; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .icon-btn:active { background: rgba(255,255,255,0.3); }
+
+  /* ── TABS ── */
+  .tab-bar { display: flex; background: white; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .tab { flex: 1; padding: 11px 4px; text-align: center; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; transition: all 0.15s; }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  /* ── SCROLLABLE CONTENT ── */
+  .scroll-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px calc(14px + var(--safe-bottom)); }
+
+  /* ── CARDS ── */
+  .card { background: white; border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .card h2 { font-size: 15px; font-weight: 600; color: var(--blue); margin-bottom: 14px; }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 13px; }
+  label.field-label { font-size: 13px; font-weight: 500; color: #444; display: block; margin-bottom: 5px; }
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%; padding: 11px 13px; border: 1.5px solid #d0d7de; border-radius: 9px;
+    font-size: 16px; font-family: inherit; background: white; color: var(--text);
+    appearance: none; -webkit-appearance: none;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,82,118,0.12); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+  /* ── PHOTO ── */
+  .photo-zone { width: 100%; padding: 28px 16px; border: 2px dashed #b0c4d8; border-radius: 10px; background: #f7fafc; cursor: pointer; text-align: center; color: #666; font-size: 14px; margin-bottom: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .photo-zone svg { width: 32px; height: 32px; color: var(--blue); }
+  .photo-zone strong { color: var(--blue); }
+  .photo-zone:active { background: #edf4fb; }
+  .preview-img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 9px; margin-bottom: 14px; display: none; }
+  input[type="file"] { display: none; }
+
+  /* ── CATEGORY GRID ── */
+  .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 13px; }
+  .cat-pill { padding: 10px 8px; border: 1.5px solid #d0d7de; border-radius: 10px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.12s; background: white; }
+  .cat-pill .icon { font-size: 22px; display: block; margin-bottom: 3px; }
+  .cat-pill.selected { border-color: transparent; color: white; }
+  .cat-pill:active { transform: scale(0.96); }
+
+  /* ── SAVE BUTTON ── */
+  .btn-save { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px; }
+  .btn-save:active { background: var(--blue-dark); transform: scale(0.98); }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-btn { padding: 7px 14px; border: 1px solid var(--border); border-radius: 99px; font-size: 13px; background: white; cursor: pointer; white-space: nowrap; color: #444; flex-shrink: 0; }
+  .filter-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+
+  /* ── RECEIPT LIST ── */
+  .receipt-card { background: white; border-radius: 10px; padding: 13px; margin-bottom: 9px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); display: flex; align-items: center; gap: 11px; }
+  .receipt-dot { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .receipt-info { flex: 1; min-width: 0; }
+  .receipt-vendor { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .receipt-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .receipt-amount { font-size: 17px; font-weight: 700; color: var(--blue); flex-shrink: 0; }
+  .receipt-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 22px; padding: 0 0 0 6px; line-height: 1; }
+  .receipt-del:active { color: var(--danger); }
+
+  .empty-state { text-align: center; padding: 56px 20px; color: #bbb; }
+  .empty-state .big { font-size: 52px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* ── SUMMARY ── */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat-box { background: white; border-radius: var(--radius); padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 700; color: var(--blue); }
+  .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .cat-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f5f5f5; }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-row .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .cat-row .name { flex: 1; font-size: 14px; }
+  .cat-row .bar-bg { width: 70px; height: 6px; background: #f0f0f0; border-radius: 99px; overflow: hidden; flex-shrink: 0; }
+  .cat-row .bar-fill { height: 100%; border-radius: 99px; }
+  .cat-row .amt { font-size: 14px; font-weight: 600; min-width: 64px; text-align: right; }
+
+  .export-btn { width: 100%; padding: 13px; background: white; color: var(--blue); border: 1.5px solid var(--blue); border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+  .export-btn:active { background: var(--blue-light); }
+
+  /* ── INSTALL BANNER ── */
+  #installBanner { display: none; position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 14px; right: 14px; background: var(--blue); color: white; border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); z-index: 999; flex-direction: row; align-items: center; gap: 12px; }
+  #installBanner.show { display: flex; }
+  .install-text { flex: 1; font-size: 14px; line-height: 1.4; }
+  .install-text strong { display: block; font-size: 15px; margin-bottom: 2px; }
+  .btn-install { background: white; color: var(--blue); border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+  .btn-dismiss { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0; }
+
+  /* ── SETTINGS ── */
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid #f5f5f5; }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { font-size: 15px; }
+  .settings-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .btn-sm { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--blue); color: var(--blue); background: white; }
+  .btn-sm:active { background: var(--blue-light); }
+  .btn-sm.danger { border-color: var(--danger); color: var(--danger); }
+  .btn-sm.danger:active { background: #FDEDEC; }
+
+  /* ── TOAST ── */
+  #toast { position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: #2C3E50; color: white; padding: 10px 20px; border-radius: 99px; font-size: 14px; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 9999; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ── PIN SCREEN ── -->
+<div id="pinScreen" class="screen">
+  <div class="pin-logo">🔧</div>
+  <div class="pin-title">Leo's Receipts</div>
+  <div class="pin-sub">Leo's Plumbing & Irrigation</div>
+  <div class="pin-dots" id="pinDots">
+    <div class="pin-dot"></div>
+    <div class="pin-dot"></div>
+    <div class="pin-dot"></div>
+    <div class="pin-dot"></div>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key empty"></button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-setup-hint" id="pinHint"></div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="appScreen" class="screen hidden">
+
+  <div class="app-header">
+    <div>
+      <h1>🔧 Leo's Receipts</h1>
+      <span>Leo's Plumbing & Irrigation</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="switchTab('settings')" title="Settings">⚙️</button>
+      <button class="icon-btn" onclick="lockApp()" title="Lock">🔒</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab active" id="tab-btn-add" onclick="switchTab('add')">+ Add</div>
+    <div class="tab" id="tab-btn-log" onclick="switchTab('log')">Log</div>
+    <div class="tab" id="tab-btn-summary" onclick="switchTab('summary')">Summary</div>
+    <div class="tab" id="tab-btn-settings" onclick="switchTab('settings')">Settings</div>
+  </div>
+
+  <!-- ADD TAB -->
+  <div id="tab-add" class="scroll-content">
+    <div class="card">
+      <h2>New receipt</h2>
+
+      <label onclick="document.getElementById('fileInput').click()" style="cursor:pointer; display:block;">
+        <div class="photo-zone" id="photoBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <strong>Tap to take photo or choose file</strong>
+          <span style="font-size:12px; color:#999;">Optional — JPG or PNG</span>
+        </div>
+      </label>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="previewPhoto(this)">
+      <img id="previewImg" class="preview-img" alt="Receipt preview">
+
+      <div class="form-group">
+        <label class="field-label">Vendor / store name</label>
+        <input type="text" id="vendor" placeholder="e.g. Home Depot, Esso, Amazon" autocomplete="off">
+      </div>
+
+      <div class="row2">
+        <div class="form-group">
+          <label class="field-label">Amount (before HST)</label>
+          <input type="number" id="amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Date</label>
+          <input type="date" id="date">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Category</label>
+        <div class="cat-grid" id="catGrid"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">Notes (optional)</label>
+        <input type="text" id="notes" placeholder="Job #, description, job site..." autocomplete="off">
+      </div>
+
+      <button class="btn-save" onclick="addReceipt()">Save Receipt ✓</button>
+    </div>
+  </div>
+
+  <!-- LOG TAB -->
+  <div id="tab-log" class="scroll-content hidden">
+    <div class="filters" id="filters"></div>
+    <div id="receiptList"></div>
+  </div>
+
+  <!-- SUMMARY TAB -->
+  <div id="tab-summary" class="scroll-content hidden">
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">Total expenses</div>
+        <div class="stat-val" id="totalAmt">$0.00</div>
+        <div class="stat-sub" id="totalCount">0 receipts</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">This month</div>
+        <div class="stat-val" id="monthAmt">$0.00</div>
+        <div class="stat-sub" id="monthCount">0 receipts</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>By category</h2>
+      <div id="catBreakdown"></div>
+    </div>
+    <button class="export-btn" onclick="exportCSV()">⬇ Export CSV (for Wave / accountant)</button>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="tab-settings" class="scroll-content hidden">
+    <div class="card">
+      <h2>Security</h2>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Change PIN</div>
+          <div class="settings-sub">Set a new 4-digit PIN</div>
+        </div>
+        <button class="btn-sm" onclick="startPinChange()">Change</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Data</h2>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Export to CSV</div>
+          <div class="settings-sub">Download all receipts for Wave or your accountant</div>
+        </div>
+        <button class="btn-sm" onclick="exportCSV()">Export</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Delete all data</div>
+          <div class="settings-sub">Permanently remove all receipts</div>
+        </div>
+        <button class="btn-sm danger" onclick="clearAll()">Delete</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Install app</h2>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Add to Home Screen</div>
+          <div class="settings-sub">iPhone: tap Share → Add to Home Screen<br>Android: tap menu → Add to Home Screen</div>
+        </div>
+        <button class="btn-sm" id="manualInstallBtn" onclick="triggerInstall()" style="display:none">Install</button>
+      </div>
+    </div>
+    <div class="card" style="background: #f7f9fa; box-shadow: none; border: 1px solid #e8e8e8;">
+      <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+        <strong style="color: var(--text);">Leo's Plumbing & Irrigation</strong><br>
+        Windsor, Ontario<br>
+        Receipt Tracker v1.0<br>
+        Data stored locally on this device only.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- INSTALL BANNER -->
+<div id="installBanner">
+  <div class="install-text">
+    <strong>Install Leo's Receipts</strong>
+    Add to your home screen for offline access
+  </div>
+  <button class="btn-install" onclick="triggerInstall()">Install</button>
+  <button class="btn-dismiss" onclick="dismissInstall()">×</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── CONSTANTS ──
+const CATS = [
+  { id: 'gas',       label: 'Gas & Fuel',        icon: '⛽', color: '#E67E22', bg: '#FEF9E7' },
+  { id: 'materials', label: 'Materials & Parts',  icon: '🔩', color: '#2980B9', bg: '#EBF5FB' },
+  { id: 'tools',     label: 'Tools & Equipment',  icon: '🔧', color: '#8E44AD', bg: '#F5EEF8' },
+  { id: 'vehicle',   label: 'Vehicle',            icon: '🚗', color: '#27AE60', bg: '#EAFAF1' },
+  { id: 'subs',      label: 'Subscriptions',      icon: '💻', color: '#2C3E50', bg: '#F0F3F4' },
+  { id: 'invoices',  label: 'Invoices Received',  icon: '📄', color: '#C0392B', bg: '#FDEDEC' },
+  { id: 'permits',   label: 'Permits & Fees',     icon: '📋', color: '#16A085', bg: '#E8F8F5' },
+  { id: 'other',     label: 'Other',              icon: '📦', color: '#7F8C8D', bg: '#F2F3F4' },
+];
+
+// ── STATE ──
+let receipts = JSON.parse(localStorage.getItem('leos_receipts') || '[]');
+let selectedCat = null;
+let filterCat = 'all';
+let pinEntry = '';
+let pinMode = 'verify'; // 'verify' | 'set-new' | 'set-confirm'
+let pinNewTemp = '';
+let deferredInstall = null;
+
+// ── STORAGE ──
+function save() { localStorage.setItem('leos_receipts', JSON.stringify(receipts)); }
+function catById(id) { return CATS.find(c => c.id === id) || CATS[7]; }
+
+// ── TOAST ──
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── PIN LOGIC ──
+function initPin() {
+  const stored = localStorage.getItem('leos_pin');
+  if (!stored) {
+    pinMode = 'set-new';
+    document.getElementById('pinHint').textContent = 'First time? Set a 4-digit PIN to protect your data.';
+    updatePinLabel('Choose a 4-digit PIN');
+  } else {
+    pinMode = 'verify';
+    updatePinLabel('Enter your PIN');
+  }
+}
+
+function updatePinLabel(text) {
+  document.querySelector('#pinScreen .pin-sub').textContent = text;
+}
+
+function pinKey(digit) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += digit;
+  updateDots();
+  if (pinEntry.length === 4) setTimeout(processPin, 120);
+}
+
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updateDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function updateDots(state = 'normal') {
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach((d, i) => {
+    d.classList.toggle('filled', i < pinEntry.length);
+    d.classList.toggle('error', state === 'error');
+  });
+}
+
+function processPin() {
+  if (pinMode === 'verify') {
+    const stored = localStorage.getItem('leos_pin');
+    if (pinEntry === stored) {
+      document.getElementById('pinScreen').classList.add('hidden');
+      document.getElementById('appScreen').classList.remove('hidden');
+      pinEntry = '';
+      updateDots();
+    } else {
+      updateDots('error');
+      document.getElementById('pinError').textContent = 'Incorrect PIN — try again';
+      setTimeout(() => {
+        pinEntry = '';
+        updateDots();
+        document.getElementById('pinError').textContent = '';
+      }, 1000);
+    }
+  } else if (pinMode === 'set-new') {
+    pinNewTemp = pinEntry;
+    pinEntry = '';
+    updateDots();
+    pinMode = 'set-confirm';
+    updatePinLabel('Confirm your PIN');
+    document.getElementById('pinHint').textContent = 'Enter the same PIN again to confirm.';
+  } else if (pinMode === 'set-confirm') {
+    if (pinEntry === pinNewTemp) {
+      localStorage.setItem('leos_pin', pinEntry);
+      pinEntry = '';
+      pinMode = 'verify';
+      document.getElementById('pinScreen').classList.add('hidden');
+      document.getElementById('appScreen').classList.remove('hidden');
+      toast('PIN set successfully 🔒');
+    } else {
+      updateDots('error');
+      document.getElementById('pinError').textContent = 'PINs don\'t match — try again';
+      setTimeout(() => {
+        pinEntry = '';
+        pinNewTemp = '';
+        pinMode = 'set-new';
+        updateDots();
+        updatePinLabel('Choose a 4-digit PIN');
+        document.getElementById('pinError').textContent = '';
+        document.getElementById('pinHint').textContent = 'Set a 4-digit PIN to protect your data.';
+      }, 1000);
+    }
+  }
+}
+
+function lockApp() {
+  document.getElementById('appScreen').classList.add('hidden');
+  document.getElementById('pinScreen').classList.remove('hidden');
+  pinEntry = '';
+  pinMode = 'verify';
+  updateDots();
+  updatePinLabel('Enter your PIN');
+}
+
+function startPinChange() {
+  lockApp();
+  pinMode = 'set-new';
+  updatePinLabel('Choose a new PIN');
+  document.getElementById('pinHint').textContent = 'Enter a new 4-digit PIN.';
+}
+
+// ── TABS ──
+function switchTab(t) {
+  ['add','log','summary','settings'].forEach(id => {
+    document.getElementById('tab-' + id).classList.toggle('hidden', id !== t);
+    document.getElementById('tab-btn-' + id).classList.toggle('active', id === t);
+  });
+  if (t === 'log') { buildFilters(); buildList(); }
+  if (t === 'summary') buildSummary();
+}
+
+// ── CATEGORY GRID ──
+function buildCatGrid() {
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = '';
+  CATS.forEach(c => {
+    const pill = document.createElement('div');
+    pill.className = 'cat-pill' + (selectedCat === c.id ? ' selected' : '');
+    if (selectedCat === c.id) pill.style.background = c.color;
+    pill.innerHTML = `<span class="icon">${c.icon}</span>${c.label}`;
+    pill.onclick = () => { selectedCat = c.id; buildCatGrid(); };
+    grid.appendChild(pill);
+  });
+}
+
+// ── PHOTO ──
+function previewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const img = document.getElementById('previewImg');
+  img.src = URL.createObjectURL(file);
+  img.style.display = 'block';
+  document.getElementById('photoBtn').style.display = 'none';
+}
+
+// ── ADD RECEIPT ──
+function addReceipt() {
+  const vendor = document.getElementById('vendor').value.trim();
+  const amount = parseFloat(document.getElementById('amount').value);
+  const date = document.getElementById('date').value;
+  const notes = document.getElementById('notes').value.trim();
+
+  if (!vendor) { toast('⚠️ Enter a vendor name'); return; }
+  if (!amount || amount <= 0) { toast('⚠️ Enter an amount'); return; }
+  if (!date) { toast('⚠️ Select a date'); return; }
+  if (!selectedCat) { toast('⚠️ Select a category'); return; }
+
+  receipts.unshift({ id: Date.now(), vendor, amount, date, cat: selectedCat, notes });
+  save();
+
+  document.getElementById('vendor').value = '';
+  document.getElementById('amount').value = '';
+  document.getElementById('notes').value = '';
+  document.getElementById('date').valueAsDate = new Date();
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('photoBtn').style.display = 'flex';
+  document.getElementById('fileInput').value = '';
+  selectedCat = null;
+  buildCatGrid();
+
+  toast('Receipt saved ✓');
+  switchTab('log');
+}
+
+// ── LOG ──
+function buildFilters() {
+  const el = document.getElementById('filters');
+  el.innerHTML = '';
+  const all = document.createElement('button');
+  all.className = 'filter-btn' + (filterCat === 'all' ? ' active' : '');
+  all.textContent = 'All (' + receipts.length + ')';
+  all.onclick = () => { filterCat = 'all'; buildFilters(); buildList(); };
+  el.appendChild(all);
+  CATS.forEach(c => {
+    const count = receipts.filter(r => r.cat === c.id).length;
+    if (!count) return;
+    const b = document.createElement('button');
+    b.className = 'filter-btn' + (filterCat === c.id ? ' active' : '');
+    b.textContent = c.icon + ' ' + c.label + ' (' + count + ')';
+    b.onclick = () => { filterCat = c.id; buildFilters(); buildList(); };
+    el.appendChild(b);
+  });
+}
+
+function buildList() {
+  const el = document.getElementById('receiptList');
+  const filtered = filterCat === 'all' ? receipts : receipts.filter(r => r.cat === filterCat);
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-state"><div class="big">🧾</div><p>No receipts yet.<br>Tap <strong>+ Add</strong> to log your first one.</p></div>`;
+    return;
+  }
+  el.innerHTML = '';
+  filtered.forEach(r => {
+    const c = catById(r.cat);
+    const d = document.createElement('div');
+    d.className = 'receipt-card';
+    d.innerHTML = `
+      <div class="receipt-dot" style="background:${c.bg}">${c.icon}</div>
+      <div class="receipt-info">
+        <div class="receipt-vendor">${r.vendor}</div>
+        <div class="receipt-meta">${c.label} · ${formatDate(r.date)}${r.notes ? ' · ' + r.notes : ''}</div>
+      </div>
+      <div class="receipt-amount">$${r.amount.toFixed(2)}</div>
+      <button class="receipt-del" onclick="deleteReceipt(${r.id})">×</button>
+    `;
+    el.appendChild(d);
+  });
+}
+
+function deleteReceipt(id) {
+  if (!confirm('Delete this receipt?')) return;
+  receipts = receipts.filter(r => r.id !== id);
+  save(); buildFilters(); buildList(); 
+}
+
+function formatDate(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
+}
+
+// ── SUMMARY ──
+function buildSummary() {
+  const total = receipts.reduce((s, r) => s + r.amount, 0);
+  document.getElementById('totalAmt').textContent = '$' + total.toFixed(2);
+  document.getElementById('totalCount').textContent = receipts.length + ' receipt' + (receipts.length !== 1 ? 's' : '');
+
+  const now = new Date();
+  const monthReceipts = receipts.filter(r => {
+    const d = new Date(r.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const monthTotal = monthReceipts.reduce((s, r) => s + r.amount, 0);
+  document.getElementById('monthAmt').textContent = '$' + monthTotal.toFixed(2);
+  document.getElementById('monthCount').textContent = monthReceipts.length + ' receipt' + (monthReceipts.length !== 1 ? 's' : '');
+
+  const bd = document.getElementById('catBreakdown');
+  bd.innerHTML = '';
+  const totals = {};
+  receipts.forEach(r => { totals[r.cat] = (totals[r.cat] || 0) + r.amount; });
+  const max = Math.max(...Object.values(totals), 0.01);
+
+  const sorted = CATS.filter(c => totals[c.id]).sort((a, b) => totals[b.id] - totals[a.id]);
+  if (!sorted.length) {
+    bd.innerHTML = '<div style="text-align:center;color:#bbb;padding:20px;font-size:14px;">No receipts yet</div>';
+    return;
+  }
+  sorted.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+    const pct = Math.round((totals[c.id] / max) * 100);
+    row.innerHTML = `
+      <div class="dot" style="background:${c.color}"></div>
+      <div class="name">${c.icon} ${c.label}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${c.color}"></div></div>
+      <div class="amt" style="color:${c.color}">$${totals[c.id].toFixed(2)}</div>
+    `;
+    bd.appendChild(row);
+  });
+}
+
+// ── EXPORT ──
+function exportCSV() {
+  if (!receipts.length) { toast('No receipts to export'); return; }
+  let csv = 'Date,Vendor,Category,Amount (pre-HST),HST (13%),Total,Notes\n';
+  receipts.forEach(r => {
+    const c = catById(r.cat);
+    const hst = (r.amount * 0.13).toFixed(2);
+    const total = (r.amount * 1.13).toFixed(2);
+    csv += `${r.date},"${r.vendor.replace(/"/g,'""')}","${c.label}",${r.amount.toFixed(2)},${hst},${total},"${(r.notes||'').replace(/"/g,'""')}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'leos_receipts_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  toast('CSV exported ✓');
+}
+
+// ── CLEAR DATA ──
+function clearAll() {
+  if (!confirm('Delete ALL receipts permanently? This cannot be undone.')) return;
+  receipts = [];
+  save();
+  toast('All data cleared');
+  buildSummary();
+}
+
+// ── PWA INSTALL ──
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('installBanner').classList.add('show');
+  document.getElementById('manualInstallBtn').style.display = 'block';
+});
+
+function triggerInstall() {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(() => {
+      deferredInstall = null;
+      dismissInstall();
+    });
+  }
+}
+
+function dismissInstall() {
+  document.getElementById('installBanner').classList.remove('show');
+}
+
+window.addEventListener('appinstalled', () => {
+  dismissInstall();
+  toast('App installed! 🎉');
+});
+
+// ── SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ── INIT ──
+document.getElementById('date').valueAsDate = new Date();
+buildCatGrid();
+initPin();
+</script>
+</body>
+</html>
