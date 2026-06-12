@@ -13,6 +13,7 @@
 <style>
   :root {
     --blue: #1A5276; --blue-dark: #154360; --blue-light: #D6EAF8;
+    --green: #1E8449; --green-light: #EAFAF1;
     --danger: #E74C3C; --text: #1a1a1a; --text-muted: #888;
     --border: #e0e0e0; --white: #fff; --radius: 12px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -23,7 +24,6 @@
 
   .hidden { display: none !important; }
 
-  /* SCREENS */
   .screen { position: fixed; inset: 0; display: flex; flex-direction: column; background: #f0f2f5; }
 
   /* PIN */
@@ -81,17 +81,26 @@
   .preview-img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 9px; margin-bottom: 14px; }
   input[type="file"] { display: none; }
 
-  /* CATEGORY */
+  /* CATEGORY GRID */
   .cat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 13px; }
   .cat-pill { padding: 10px 8px; border: 1.5px solid #d0d7de; border-radius: 10px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.12s; background: white; }
   .cat-pill .icon { font-size: 22px; display: block; margin-bottom: 3px; }
   .cat-pill.selected { border-color: transparent; color: white; }
   .cat-pill:active { transform: scale(0.96); }
+  .income-pill { grid-column: 1 / -1; border-color: #27AE60; color: #1E8449; }
+  .income-pill.selected { background: #1E8449 !important; color: white; border-color: transparent; }
+
+  /* INCOME TOTALS */
+  .inc-totals { background: #f0f9f4; border: 1px solid #c3e6cb; border-radius: 9px; padding: 12px 14px; margin-bottom: 13px; }
+  .inc-tot-row { display: flex; justify-content: space-between; font-size: 13px; color: #555; padding: 2px 0; }
+  .inc-tot-row.big { font-size: 16px; font-weight: 700; color: var(--green); border-top: 1px solid #c3e6cb; margin-top: 7px; padding-top: 9px; }
+  .inc-tot-row.balance { font-weight: 600; color: var(--blue); }
 
   /* SAVE BTN */
   .btn-save { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: 700; cursor: pointer; }
   .btn-save:active { background: var(--blue-dark); transform: scale(0.98); }
-  .btn-save:disabled { background: #aaa; cursor: not-allowed; transform: none; }
+  .btn-save.income-btn { background: var(--green); }
+  .btn-save.income-btn:active { background: #196F3D; }
 
   /* FILTERS */
   .filters { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
@@ -106,23 +115,30 @@
   .receipt-info { flex: 1; min-width: 0; }
   .receipt-vendor { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .receipt-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-  .receipt-amount { font-size: 17px; font-weight: 700; color: var(--blue); flex-shrink: 0; }
+  .receipt-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+  .receipt-amount { font-size: 17px; font-weight: 700; color: var(--blue); }
+  .receipt-amount.income { color: var(--green); }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .sync-dot.synced { background: #27AE60; }
+  .sync-dot.unsynced { background: #F39C12; }
+  .sync-dot.unknown { background: #ccc; }
 
-  /* LOADING */
+  /* LOADING / EMPTY */
   .loading-state { text-align: center; padding: 56px 20px; color: #aaa; }
   .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
   .empty-state { text-align: center; padding: 56px 20px; color: #bbb; }
   .empty-state .big { font-size: 52px; margin-bottom: 12px; }
   .empty-state p { font-size: 14px; line-height: 1.6; }
 
   /* SUMMARY */
-  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-  .stat-box { background: white; border-radius: var(--radius); padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
-  .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
-  .stat-val { font-size: 22px; font-weight: 700; color: var(--blue); }
-  .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .summary-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .summary-card { background: white; border-radius: var(--radius); padding: 16px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .summary-card.net { grid-column: 1 / -1; padding: 18px 16px; }
+  .sc-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+  .sc-val { font-size: 24px; font-weight: 800; }
+  .summary-card.net .sc-val { font-size: 30px; }
+  .sc-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
   .cat-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f5f5f5; }
   .cat-row:last-child { border-bottom: none; }
   .cat-row .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -154,6 +170,7 @@
   .modal-cat-label { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
   .modal-amount { font-size: 30px; font-weight: 800; color: var(--blue); margin-bottom: 16px; }
   .modal-amount span { font-size: 14px; font-weight: 500; color: #888; }
+  .modal-amount.income { color: var(--green); }
   .modal-img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 12px; background: #f5f5f5; margin-bottom: 16px; cursor: zoom-in; display: block; }
   .modal-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
   .modal-row:last-of-type { border-bottom: none; }
@@ -229,40 +246,106 @@
   <!-- ADD -->
   <div id="tab-add" class="scroll-content">
     <div class="card">
-      <h2>New receipt</h2>
-      <label onclick="document.getElementById('fileInput').click()" style="cursor:pointer;display:block;">
-        <div class="photo-zone" id="photoBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <strong>Tap to take photo or choose file</strong>
-          <span style="font-size:12px;color:#999;">Optional — JPG or PNG</span>
-        </div>
-      </label>
-      <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="previewPhoto(this)">
-      <img id="previewImg" class="preview-img hidden" alt="Receipt preview">
+      <h2 id="formTitle">New Entry</h2>
 
+      <!-- STEP 1: Type / Category — always visible first -->
       <div class="form-group">
-        <label class="field-label">Vendor / store name</label>
-        <input type="text" id="vendor" placeholder="e.g. Home Depot, Esso, Amazon" autocomplete="off">
-      </div>
-      <div class="row2">
-        <div class="form-group">
-          <label class="field-label">Amount (before HST)</label>
-          <input type="number" id="amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-        </div>
-        <div class="form-group">
-          <label class="field-label">Date</label>
-          <input type="date" id="date">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="field-label">Category</label>
+        <label class="field-label">Select type</label>
         <div class="cat-grid" id="catGrid"></div>
       </div>
-      <div class="form-group">
-        <label class="field-label">Notes (optional)</label>
-        <input type="text" id="notes" placeholder="Job #, description, job site..." autocomplete="off">
+
+      <!-- EXPENSE FORM — shown after expense category selected -->
+      <div id="expenseForm" class="hidden">
+        <label onclick="document.getElementById('fileInput').click()" style="cursor:pointer;display:block;">
+          <div class="photo-zone" id="photoBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <strong>Tap to take photo or choose file</strong>
+            <span style="font-size:12px;color:#999;">Optional — JPG or PNG</span>
+          </div>
+        </label>
+        <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="previewPhoto(this)">
+        <img id="previewImg" class="preview-img hidden" alt="Receipt preview">
+
+        <div class="form-group">
+          <label class="field-label">Vendor / store name</label>
+          <input type="text" id="vendor" placeholder="e.g. Home Depot, Esso, Amazon" autocomplete="off">
+        </div>
+        <div class="row2">
+          <div class="form-group">
+            <label class="field-label">Amount (before HST)</label>
+            <input type="number" id="amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+          </div>
+          <div class="form-group">
+            <label class="field-label">Date</label>
+            <input type="date" id="date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Payment Method</label>
+          <select id="paymentMethod">
+            <option value="">Select method...</option>
+            <option>Cash</option>
+            <option>e-Transfer</option>
+            <option>Credit Card</option>
+            <option>Debit Card</option>
+            <option>Cheque</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Notes (optional)</label>
+          <input type="text" id="notes" placeholder="Job #, description, job site..." autocomplete="off">
+        </div>
       </div>
-      <button class="btn-save" id="saveBtn" onclick="addReceipt()">Save Receipt ✓</button>
+
+      <!-- INCOME FORM — shown after Income selected -->
+      <div id="incomeForm" class="hidden">
+        <div class="row2">
+          <div class="form-group">
+            <label class="field-label">Invoice #</label>
+            <input type="text" id="incInvoiceNum" placeholder="INV-2026-001" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="field-label">Date</label>
+            <input type="date" id="incDate">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Client Name</label>
+          <input type="text" id="incClientName" placeholder="e.g. John Smith" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Job Type</label>
+          <select id="incJobType">
+            <option value="">Select job type...</option>
+            <option>Plumbing Repair</option>
+            <option>Irrigation Install</option>
+            <option>Renovation Rough-In</option>
+            <option>Landscaping</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="row2">
+          <div class="form-group">
+            <label class="field-label">Labour ($)</label>
+            <input type="number" id="incLabour" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="calcIncTotals()">
+          </div>
+          <div class="form-group">
+            <label class="field-label">Materials ($)</label>
+            <input type="number" id="incMaterials" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="calcIncTotals()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Deposit Received ($)</label>
+          <input type="number" id="incDeposit" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="calcIncTotals()">
+        </div>
+        <div id="incTotals" class="inc-totals hidden"></div>
+        <div class="form-group">
+          <label class="field-label">Notes (optional)</label>
+          <input type="text" id="incNotes" placeholder="Job details, site address..." autocomplete="off">
+        </div>
+      </div>
+
+      <button class="btn-save hidden" id="saveBtn" onclick="addReceipt()">Save ✓</button>
     </div>
   </div>
 
@@ -274,20 +357,25 @@
 
   <!-- SUMMARY -->
   <div id="tab-summary" class="scroll-content hidden">
-    <div class="stat-grid">
-      <div class="stat-box">
-        <div class="stat-label">Total expenses</div>
-        <div class="stat-val" id="totalAmt">$0.00</div>
-        <div class="stat-sub" id="totalCount">0 receipts</div>
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="sc-label">Total Expenses</div>
+        <div class="sc-val" id="totalExpenses" style="color:var(--danger)">$0.00</div>
+        <div class="sc-sub" id="expenseCount">0 receipts</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">This month</div>
-        <div class="stat-val" id="monthAmt">$0.00</div>
-        <div class="stat-sub" id="monthCount">0 receipts</div>
+      <div class="summary-card">
+        <div class="sc-label">Total Income</div>
+        <div class="sc-val" id="totalIncome" style="color:var(--green)">$0.00</div>
+        <div class="sc-sub" id="incomeCount">0 invoices</div>
+      </div>
+      <div class="summary-card net">
+        <div class="sc-label">Net Balance</div>
+        <div class="sc-val" id="netBalance">$0.00</div>
+        <div class="sc-sub" id="netSub">Income minus Expenses</div>
       </div>
     </div>
     <div class="card">
-      <h2>By category</h2>
+      <h2>Expenses by category</h2>
       <div id="catBreakdown"></div>
     </div>
     <button class="export-btn" onclick="exportCSV()">⬇ Export CSV (for Wave / accountant)</button>
@@ -326,7 +414,7 @@
       <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
         <strong style="color:var(--text);">Leo's Plumbing &amp; Irrigation</strong><br>
         Windsor, Ontario<br>
-        Receipt Tracker v2.0<br>
+        Receipt Tracker v3.0 — with Sheets sync<br>
         Data synced to cloud — shared across all devices.
       </div>
     </div>
@@ -366,12 +454,14 @@ firebase.initializeApp({
 const db = firebase.firestore();
 db.enablePersistence().catch(() => {});
 
-const CLOUDINARY_CLOUD = 'duuuutrs2';
-const CLOUDINARY_PRESET = "Leo's Receipts";
-const DRIVE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMC5glcwjkj_BXEM4KBD441OD1EGw2P5zIPBncAIti5LZar6BRr12gAIydSUZeHd4q/exec';
-
 // ── CONSTANTS ──
 const PIN = '1210';
+const CLOUDINARY_CLOUD  = 'duuuutrs2';
+const CLOUDINARY_PRESET = "Leo's Receipts";
+// Updated Apps Script handles Drive uploads + Sheets row writing
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMC5glcwjkj_BXEM4KBD441OD1EGw2P5zIPBncAIti5LZar6BRr12gAIydSUZeHd4q/exec';
+const SPREADSHEET_ID = '1ExM-7GB74gDchC242iKJdGAVPEBNVcYB';
+
 const CATS = [
   { id: 'gas',       label: 'Gas & Fuel',        icon: '⛽', color: '#E67E22', bg: '#FEF9E7' },
   { id: 'materials', label: 'Materials & Parts',  icon: '🔩', color: '#2980B9', bg: '#EBF5FB' },
@@ -383,14 +473,20 @@ const CATS = [
   { id: 'other',     label: 'Other',              icon: '📦', color: '#7F8C8D', bg: '#F2F3F4' },
 ];
 
+const CAT_NAMES = {
+  gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
+  vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
+  permits:'Permits & Fees', other:'Other'
+};
+
 // ── STATE ──
-let receipts = [];
+let receipts    = [];
 let selectedCat = null;
-let filterCat = 'all';
-let pinEntry = '';
-let currentTab = 'add';
-let loading = true;
-let currentReceipt = null;
+let filterCat   = 'all';
+let pinEntry    = '';
+let currentTab  = 'add';
+let loading     = true;
+let currentReceipt  = null;
 let deferredInstall = null;
 
 function catById(id) { return CATS.find(c => c.id === id) || CATS[7]; }
@@ -477,9 +573,72 @@ function buildCatGrid() {
     pill.className = 'cat-pill' + (selectedCat === c.id ? ' selected' : '');
     if (selectedCat === c.id) pill.style.background = c.color;
     pill.innerHTML = `<span class="icon">${c.icon}</span>${c.label}`;
-    pill.onclick = () => { selectedCat = c.id; buildCatGrid(); };
+    pill.onclick = () => {
+      selectedCat = c.id;
+      buildCatGrid();
+      showExpenseForm();
+    };
     grid.appendChild(pill);
   });
+  // Income — full-width green pill
+  const inc = document.createElement('div');
+  inc.className = 'cat-pill income-pill' + (selectedCat === 'income' ? ' selected' : '');
+  inc.innerHTML = `<span class="icon">💰</span>Income / Invoice`;
+  inc.onclick = () => {
+    selectedCat = 'income';
+    buildCatGrid();
+    showIncomeForm();
+  };
+  grid.appendChild(inc);
+}
+
+function showExpenseForm() {
+  document.getElementById('expenseForm').classList.remove('hidden');
+  document.getElementById('incomeForm').classList.add('hidden');
+  document.getElementById('saveBtn').classList.remove('hidden');
+  document.getElementById('saveBtn').className = 'btn-save';
+  document.getElementById('saveBtn').textContent = 'Save Receipt ✓';
+  document.getElementById('formTitle').textContent = 'New Receipt';
+}
+
+function showIncomeForm() {
+  document.getElementById('expenseForm').classList.add('hidden');
+  document.getElementById('incomeForm').classList.remove('hidden');
+  document.getElementById('saveBtn').classList.remove('hidden');
+  document.getElementById('saveBtn').className = 'btn-save income-btn';
+  document.getElementById('saveBtn').textContent = 'Save Invoice ✓';
+  document.getElementById('formTitle').textContent = 'New Invoice';
+  // Auto-generate invoice number from existing income count
+  const n = receipts.filter(r => r.type === 'income').length + 1;
+  document.getElementById('incInvoiceNum').value = 'INV-' + new Date().getFullYear() + '-' + String(n).padStart(3, '0');
+  document.getElementById('incDate').valueAsDate = new Date();
+  calcIncTotals();
+}
+
+// ── INCOME TOTALS ──
+function calcIncTotals() {
+  const labour    = parseFloat(document.getElementById('incLabour').value)    || 0;
+  const materials = parseFloat(document.getElementById('incMaterials').value) || 0;
+  const deposit   = parseFloat(document.getElementById('incDeposit').value)   || 0;
+  if (labour + materials === 0) {
+    document.getElementById('incTotals').classList.add('hidden');
+    return;
+  }
+  const subtotal = labour + materials;
+  const hst      = subtotal * 0.13;
+  const total    = subtotal + hst;
+  const balance  = total - deposit;
+  document.getElementById('incTotals').classList.remove('hidden');
+  document.getElementById('incTotals').innerHTML = `
+    <div class="inc-tot-row"><span>Labour</span><span>$${labour.toFixed(2)}</span></div>
+    <div class="inc-tot-row"><span>Materials</span><span>$${materials.toFixed(2)}</span></div>
+    <div class="inc-tot-row"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+    <div class="inc-tot-row"><span>HST (13%)</span><span>$${hst.toFixed(2)}</span></div>
+    <div class="inc-tot-row big"><span>Total Invoiced</span><span>$${total.toFixed(2)}</span></div>
+    ${deposit > 0 ? `
+    <div class="inc-tot-row balance"><span>Less Deposit</span><span>-$${deposit.toFixed(2)}</span></div>
+    <div class="inc-tot-row balance"><span>Balance Owing</span><span>$${balance.toFixed(2)}</span></div>` : ''}
+  `;
 }
 
 // ── PHOTO ──
@@ -519,12 +678,19 @@ async function compressImage(file) {
   });
 }
 
-// ── ADD RECEIPT ──
+// ── ADD RECEIPT (dispatcher) ──
 function addReceipt() {
-  const vendor = document.getElementById('vendor').value.trim();
-  const amount = parseFloat(document.getElementById('amount').value);
-  const date   = document.getElementById('date').value;
-  const notes  = document.getElementById('notes').value.trim();
+  if (selectedCat === 'income') addIncomeEntry();
+  else addExpenseEntry();
+}
+
+// ── ADD EXPENSE ──
+function addExpenseEntry() {
+  const vendor        = document.getElementById('vendor').value.trim();
+  const amount        = parseFloat(document.getElementById('amount').value);
+  const date          = document.getElementById('date').value;
+  const notes         = document.getElementById('notes').value.trim();
+  const paymentMethod = document.getElementById('paymentMethod').value;
 
   if (!vendor)                { toast('⚠️ Enter a vendor name'); return; }
   if (!amount || amount <= 0) { toast('⚠️ Enter an amount'); return; }
@@ -534,34 +700,98 @@ function addReceipt() {
   const fileInput = document.getElementById('fileInput');
   const photoFile = fileInput.files[0] || null;
   const savedCat  = selectedCat;
+  const receiptNum = 'RCP-' + date.replace(/-/g,'') + '-' + (Math.floor(Math.random() * 900) + 100);
 
-  // Reset form immediately — never block the UI waiting on network
+  // Reset form immediately
   document.getElementById('vendor').value = '';
   document.getElementById('amount').value = '';
   document.getElementById('notes').value  = '';
+  document.getElementById('paymentMethod').value = '';
   document.getElementById('date').valueAsDate = new Date();
   document.getElementById('previewImg').classList.add('hidden');
   document.getElementById('photoBtn').style.display = 'flex';
   fileInput.value = '';
   selectedCat = null;
   buildCatGrid();
+  document.getElementById('expenseForm').classList.add('hidden');
+  document.getElementById('saveBtn').classList.add('hidden');
+  document.getElementById('formTitle').textContent = 'New Entry';
   toast('Receipt saved ✓');
 
-  // All network work runs in background — UI is already ready for next receipt
-  doSave(vendor, amount, date, savedCat, notes, photoFile);
-}
-
-function doSave(vendor, amount, date, cat, notes, photoFile) {
-  // Generate ID client-side — no await needed, never blocks UI
+  // Write to Firestore (fire-and-forget)
   const docRef = db.collection('receipts').doc();
   docRef.set({
-    vendor, amount, date, cat, notes, imageUrl: null,
+    type: 'expense', vendor, amount, date, cat: savedCat, notes,
+    paymentMethod, receiptNum, imageUrl: null, sheetsSync: false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   }).catch(e => console.error('Firestore write error:', e));
 
-  if (photoFile) doUpload(docRef.id, photoFile, cat, vendor, date);
+  // Photo upload to Cloudinary + Drive (background)
+  if (photoFile) doUpload(docRef.id, photoFile, savedCat, vendor, date);
+
+  // Sheets sync (background, parallel to photo upload)
+  doSheetsSync(docRef.id, 'expense', {
+    date, vendor,
+    category: CAT_NAMES[savedCat] || 'Other',
+    notes, amount: String(amount),
+    paymentMethod, receiptNum
+  });
 }
 
+// ── ADD INCOME ──
+function addIncomeEntry() {
+  const invoiceNum  = document.getElementById('incInvoiceNum').value.trim();
+  const date        = document.getElementById('incDate').value;
+  const clientName  = document.getElementById('incClientName').value.trim();
+  const jobType     = document.getElementById('incJobType').value;
+  const labour      = parseFloat(document.getElementById('incLabour').value)    || 0;
+  const materials   = parseFloat(document.getElementById('incMaterials').value) || 0;
+  const deposit     = parseFloat(document.getElementById('incDeposit').value)   || 0;
+  const notes       = document.getElementById('incNotes').value.trim();
+
+  if (!clientName)              { toast('⚠️ Enter a client name'); return; }
+  if (!date)                    { toast('⚠️ Select a date'); return; }
+  if (!jobType)                 { toast('⚠️ Select a job type'); return; }
+  if (labour + materials <= 0)  { toast('⚠️ Enter labour or materials amount'); return; }
+
+  const subtotal = labour + materials;
+  const hst      = Math.round(subtotal * 0.13 * 100) / 100;
+  const total    = Math.round((subtotal + hst) * 100) / 100;
+  const balance  = Math.round((total - deposit) * 100) / 100;
+
+  // Reset income form immediately
+  document.getElementById('incClientName').value  = '';
+  document.getElementById('incJobType').value     = '';
+  document.getElementById('incLabour').value      = '';
+  document.getElementById('incMaterials').value   = '';
+  document.getElementById('incDeposit').value     = '';
+  document.getElementById('incNotes').value       = '';
+  document.getElementById('incTotals').classList.add('hidden');
+  selectedCat = null;
+  buildCatGrid();
+  document.getElementById('incomeForm').classList.add('hidden');
+  document.getElementById('saveBtn').classList.add('hidden');
+  document.getElementById('formTitle').textContent = 'New Entry';
+  toast('Invoice saved ✓');
+
+  // Write to Firestore (fire-and-forget)
+  const docRef = db.collection('receipts').doc();
+  docRef.set({
+    type: 'income', invoiceNum, date, clientName, jobType,
+    labour, materials, deposit, notes,
+    amount: subtotal, hst, totalInvoiced: total, balance,
+    imageUrl: null, sheetsSync: false,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(e => console.error('Firestore income write error:', e));
+
+  // Sheets sync (background)
+  doSheetsSync(docRef.id, 'income', {
+    invoiceNum, date, clientName, jobType, notes,
+    labour: String(labour), materials: String(materials), deposit: String(deposit)
+  });
+}
+
+// ── CLOUDINARY + DRIVE UPLOAD ──
 async function doUpload(docId, file, cat, vendor, date) {
   let imageUrl = null;
 
@@ -569,14 +799,12 @@ async function doUpload(docId, file, cat, vendor, date) {
   try {
     let blob;
     try { blob = await compressImage(file); } catch { blob = file; }
-
     const fd = new FormData();
     fd.append('file', blob);
     fd.append('upload_preset', CLOUDINARY_PRESET);
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
     const data = await res.json();
     if (!data.secure_url) throw new Error(data.error?.message || 'No URL returned');
-
     imageUrl = data.secure_url;
     db.collection('receipts').doc(docId).update({ imageUrl })
       .catch(e => console.error('imageUrl update error:', e));
@@ -584,20 +812,35 @@ async function doUpload(docId, file, cat, vendor, date) {
     console.error('Cloudinary error:', e.message);
   }
 
-  // Drive — runs independently after Cloudinary block, always attempted when we have a URL
-  if (DRIVE_SCRIPT_URL && imageUrl) {
-    const catNames = {
-      gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
-      vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
-      permits:'Permits & Fees', other:'Other'
-    };
+  // Drive — runs independently after Cloudinary block
+  if (SCRIPT_URL && imageUrl) {
     const params = new URLSearchParams({
-      url: imageUrl, category: catNames[cat] || 'Other', vendor, date
+      action: 'drive',
+      url: imageUrl, category: CAT_NAMES[cat] || 'Other', vendor, date
     });
-    console.log('[Drive] sending request:', `${DRIVE_SCRIPT_URL}?${params}`);
-    fetch(`${DRIVE_SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
+    console.log('[Drive] sending request');
+    fetch(`${SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
   } else {
-    console.log('[Drive] skipped — imageUrl:', imageUrl, 'DRIVE_SCRIPT_URL:', !!DRIVE_SCRIPT_URL);
+    console.log('[Drive] skipped — imageUrl:', imageUrl, 'SCRIPT_URL:', !!SCRIPT_URL);
+  }
+}
+
+// ── SHEETS SYNC ──
+async function doSheetsSync(docId, type, data) {
+  if (!SCRIPT_URL) return;
+  try {
+    const params = new URLSearchParams({ action: type, spreadsheetId: SPREADSHEET_ID, ...data });
+    const res  = await fetch(`${SCRIPT_URL}?${params}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (json.ok) {
+      db.collection('receipts').doc(docId).update({ sheetsSync: true }).catch(() => {});
+      console.log('[Sheets] synced', type, docId);
+    } else {
+      throw new Error(json.error || 'Script returned ok:false');
+    }
+  } catch(e) {
+    console.error('[Sheets] sync failed:', e.message);
   }
 }
 
@@ -605,11 +848,22 @@ async function doUpload(docId, file, cat, vendor, date) {
 function buildFilters() {
   const el = document.getElementById('filters');
   el.innerHTML = '';
-  const all = document.createElement('button');
-  all.className = 'filter-btn' + (filterCat === 'all' ? ' active' : '');
-  all.textContent = `All (${receipts.length})`;
-  all.onclick = () => { filterCat = 'all'; buildFilters(); buildList(); };
-  el.appendChild(all);
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-btn' + (filterCat === 'all' ? ' active' : '');
+  allBtn.textContent = `All (${receipts.length})`;
+  allBtn.onclick = () => { filterCat = 'all'; buildFilters(); buildList(); };
+  el.appendChild(allBtn);
+
+  const incCount = receipts.filter(r => r.type === 'income').length;
+  if (incCount) {
+    const b = document.createElement('button');
+    b.className = 'filter-btn' + (filterCat === 'income' ? ' active' : '');
+    b.textContent = `💰 Income (${incCount})`;
+    b.onclick = () => { filterCat = 'income'; buildFilters(); buildList(); };
+    el.appendChild(b);
+  }
+
   CATS.forEach(c => {
     const count = receipts.filter(r => r.cat === c.id).length;
     if (!count) return;
@@ -627,24 +881,49 @@ function buildList() {
     el.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading receipts…</p></div>`;
     return;
   }
-  const filtered = filterCat === 'all' ? receipts : receipts.filter(r => r.cat === filterCat);
+  const filtered = filterCat === 'all'
+    ? receipts
+    : filterCat === 'income'
+      ? receipts.filter(r => r.type === 'income')
+      : receipts.filter(r => r.cat === filterCat);
+
   if (!filtered.length) {
-    el.innerHTML = `<div class="empty-state"><div class="big">🧾</div><p>No receipts yet.<br>Tap <strong>+ Add</strong> to log your first one.</p></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="big">🧾</div><p>No entries yet.<br>Tap <strong>+ Add</strong> to log your first one.</p></div>`;
     return;
   }
   el.innerHTML = '';
   filtered.forEach(r => {
-    const c = catById(r.cat);
+    const syncClass = r.sheetsSync === true ? 'synced' : r.sheetsSync === false ? 'unsynced' : 'unknown';
+    const syncTitle = r.sheetsSync === true ? 'Synced to Sheets' : r.sheetsSync === false ? 'Not synced to Sheets' : '';
     const d = document.createElement('div');
     d.className = 'receipt-card';
-    d.innerHTML = `
-      <div class="receipt-dot" style="background:${c.bg}">${c.icon}</div>
-      <div class="receipt-info">
-        <div class="receipt-vendor">${esc(r.vendor)}</div>
-        <div class="receipt-meta">${c.label} · ${fmtDate(r.date)}${r.notes ? ' · ' + esc(r.notes) : ''}${r.imageUrl ? ' · 📎' : ''}</div>
-      </div>
-      <div class="receipt-amount">$${Number(r.amount).toFixed(2)}</div>
-    `;
+
+    if (r.type === 'income') {
+      d.innerHTML = `
+        <div class="receipt-dot" style="background:#EAFAF1">💰</div>
+        <div class="receipt-info">
+          <div class="receipt-vendor">${esc(r.clientName || 'Unknown Client')}</div>
+          <div class="receipt-meta">Income · ${fmtDate(r.date)}${r.jobType ? ' · ' + esc(r.jobType) : ''}${r.invoiceNum ? ' · ' + esc(r.invoiceNum) : ''}</div>
+        </div>
+        <div class="receipt-right">
+          <div class="receipt-amount income">+$${Number(r.totalInvoiced || r.amount || 0).toFixed(2)}</div>
+          ${syncTitle ? `<div class="sync-dot ${syncClass}" title="${syncTitle}"></div>` : ''}
+        </div>
+      `;
+    } else {
+      const c = catById(r.cat);
+      d.innerHTML = `
+        <div class="receipt-dot" style="background:${c.bg}">${c.icon}</div>
+        <div class="receipt-info">
+          <div class="receipt-vendor">${esc(r.vendor)}</div>
+          <div class="receipt-meta">${c.label} · ${fmtDate(r.date)}${r.notes ? ' · ' + esc(r.notes) : ''}${r.imageUrl ? ' · 📎' : ''}</div>
+        </div>
+        <div class="receipt-right">
+          <div class="receipt-amount">$${Number(r.amount).toFixed(2)}</div>
+          ${syncTitle ? `<div class="sync-dot ${syncClass}" title="${syncTitle}"></div>` : ''}
+        </div>
+      `;
+    }
     d.onclick = () => openModal(r);
     el.appendChild(d);
   });
@@ -653,10 +932,15 @@ function buildList() {
 // ── MODAL ──
 function openModal(r) {
   currentReceipt = r;
-  const c = catById(r.cat);
+  if (r.type === 'income') openIncomeModal(r);
+  else openExpenseModal(r);
+}
+
+function openExpenseModal(r) {
+  const c     = catById(r.cat);
   const hst   = (Number(r.amount) * 0.13).toFixed(2);
   const total = (Number(r.amount) * 1.13).toFixed(2);
-
+  const syncBadge = r.sheetsSync === true ? '✅ Synced' : r.sheetsSync === false ? '⚠️ Not synced' : '';
   document.getElementById('modalBody').innerHTML = `
     <div class="modal-header">
       <div class="modal-icon" style="background:${c.bg}">${c.icon}</div>
@@ -669,8 +953,39 @@ function openModal(r) {
     ${r.imageUrl ? `<img class="modal-img" src="${esc(r.imageUrl)}" onclick="openFullImg()" alt="Receipt photo">` : ''}
     <div class="modal-row"><span class="modal-row-label">HST (13%)</span><span class="modal-row-val">$${hst}</span></div>
     <div class="modal-row"><span class="modal-row-label">Total with HST</span><span class="modal-row-val">$${total}</span></div>
+    ${r.paymentMethod ? `<div class="modal-row"><span class="modal-row-label">Payment Method</span><span class="modal-row-val">${esc(r.paymentMethod)}</span></div>` : ''}
+    ${r.receiptNum ? `<div class="modal-row"><span class="modal-row-label">Receipt #</span><span class="modal-row-val">${esc(r.receiptNum)}</span></div>` : ''}
     ${r.notes ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-val">${esc(r.notes)}</span></div>` : ''}
+    ${syncBadge ? `<div class="modal-row"><span class="modal-row-label">Sheets sync</span><span class="modal-row-val">${syncBadge}</span></div>` : ''}
     <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Receipt</button>
+  `;
+  document.getElementById('receiptModal').classList.remove('hidden');
+}
+
+function openIncomeModal(r) {
+  const total   = Number(r.totalInvoiced || 0).toFixed(2);
+  const syncBadge = r.sheetsSync === true ? '✅ Synced' : r.sheetsSync === false ? '⚠️ Not synced' : '';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-icon" style="background:#EAFAF1">💰</div>
+      <div>
+        <div class="modal-vendor">${esc(r.clientName || 'Unknown Client')}</div>
+        <div class="modal-cat-label">Income · ${fmtDate(r.date)}</div>
+      </div>
+    </div>
+    <div class="modal-amount income">$${total} <span>total invoiced</span></div>
+    ${r.invoiceNum ? `<div class="modal-row"><span class="modal-row-label">Invoice #</span><span class="modal-row-val">${esc(r.invoiceNum)}</span></div>` : ''}
+    ${r.jobType ? `<div class="modal-row"><span class="modal-row-label">Job Type</span><span class="modal-row-val">${esc(r.jobType)}</span></div>` : ''}
+    <div class="modal-row"><span class="modal-row-label">Labour</span><span class="modal-row-val">$${Number(r.labour||0).toFixed(2)}</span></div>
+    <div class="modal-row"><span class="modal-row-label">Materials</span><span class="modal-row-val">$${Number(r.materials||0).toFixed(2)}</span></div>
+    <div class="modal-row"><span class="modal-row-label">Subtotal</span><span class="modal-row-val">$${Number(r.amount||0).toFixed(2)}</span></div>
+    <div class="modal-row"><span class="modal-row-label">HST (13%)</span><span class="modal-row-val">$${Number(r.hst||0).toFixed(2)}</span></div>
+    <div class="modal-row"><span class="modal-row-label">Total Invoiced</span><span class="modal-row-val">$${total}</span></div>
+    <div class="modal-row"><span class="modal-row-label">Deposit Received</span><span class="modal-row-val">$${Number(r.deposit||0).toFixed(2)}</span></div>
+    <div class="modal-row"><span class="modal-row-label">Balance Owing</span><span class="modal-row-val">$${Number(r.balance||0).toFixed(2)}</span></div>
+    ${r.notes ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-val">${esc(r.notes)}</span></div>` : ''}
+    ${syncBadge ? `<div class="modal-row"><span class="modal-row-label">Sheets sync</span><span class="modal-row-val">${syncBadge}</span></div>` : ''}
+    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Invoice</button>
   `;
   document.getElementById('receiptModal').classList.remove('hidden');
 }
@@ -687,12 +1002,12 @@ function openFullImg() {
 }
 
 async function deleteCurrentReceipt() {
-  if (!currentReceipt || !confirm('Delete this receipt?')) return;
+  if (!currentReceipt || !confirm('Delete this entry?')) return;
   const r = currentReceipt;
   closeModal();
   try {
     await db.collection('receipts').doc(r._id).delete();
-    toast('Receipt deleted');
+    toast('Entry deleted');
   } catch { toast('❌ Delete failed'); }
 }
 
@@ -705,27 +1020,34 @@ function fmtDate(s) {
 
 // ── SUMMARY ──
 function buildSummary() {
-  const total = receipts.reduce((s, r) => s + Number(r.amount), 0);
-  document.getElementById('totalAmt').textContent  = '$' + total.toFixed(2);
-  document.getElementById('totalCount').textContent = receipts.length + ' receipt' + (receipts.length !== 1 ? 's' : '');
+  const expenses = receipts.filter(r => r.type !== 'income');
+  const incomes  = receipts.filter(r => r.type === 'income');
 
-  const now = new Date();
-  const mo  = receipts.filter(r => {
-    const d = new Date(r.date + 'T00:00:00');
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const moTotal = mo.reduce((s, r) => s + Number(r.amount), 0);
-  document.getElementById('monthAmt').textContent   = '$' + moTotal.toFixed(2);
-  document.getElementById('monthCount').textContent  = mo.length + ' receipt' + (mo.length !== 1 ? 's' : '');
+  const totalExp = expenses.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalInc = incomes.reduce((s, r) => s + Number(r.totalInvoiced || r.amount || 0), 0);
+  const net      = totalInc - totalExp;
 
+  document.getElementById('totalExpenses').textContent = '$' + totalExp.toFixed(2);
+  document.getElementById('expenseCount').textContent  = expenses.length + ' receipt' + (expenses.length !== 1 ? 's' : '');
+
+  document.getElementById('totalIncome').textContent = '$' + totalInc.toFixed(2);
+  document.getElementById('incomeCount').textContent = incomes.length + ' invoice' + (incomes.length !== 1 ? 's' : '');
+
+  const netEl  = document.getElementById('netBalance');
+  const netSub = document.getElementById('netSub');
+  netEl.textContent  = (net >= 0 ? '+' : '-') + '$' + Math.abs(net).toFixed(2);
+  netEl.style.color  = net >= 0 ? 'var(--green)' : 'var(--danger)';
+  netSub.textContent = net >= 0 ? 'Business is profitable ✓' : 'Expenses exceed income';
+
+  // Expense category breakdown
   const bd = document.getElementById('catBreakdown');
   bd.innerHTML = '';
   const totals = {};
-  receipts.forEach(r => { totals[r.cat] = (totals[r.cat] || 0) + Number(r.amount); });
-  const max = Math.max(...Object.values(totals), 0.01);
+  expenses.forEach(r => { totals[r.cat] = (totals[r.cat] || 0) + Number(r.amount || 0); });
+  const max    = Math.max(...Object.values(totals), 0.01);
   const sorted = CATS.filter(c => totals[c.id]).sort((a, b) => totals[b.id] - totals[a.id]);
   if (!sorted.length) {
-    bd.innerHTML = '<div style="text-align:center;color:#bbb;padding:20px;font-size:14px;">No receipts yet</div>';
+    bd.innerHTML = '<div style="text-align:center;color:#bbb;padding:20px;font-size:14px;">No expenses yet</div>';
     return;
   }
   sorted.forEach(c => {
@@ -744,13 +1066,19 @@ function buildSummary() {
 
 // ── EXPORT ──
 function exportCSV() {
-  if (!receipts.length) { toast('No receipts to export'); return; }
-  let csv = 'Date,Vendor,Category,Amount (pre-HST),HST (13%),Total,Notes\n';
+  if (!receipts.length) { toast('No entries to export'); return; }
+  let csv = 'Type,Date,Vendor/Client,Category/Job,Amount,HST,Total,Notes\n';
   receipts.forEach(r => {
-    const c = catById(r.cat);
-    const hst   = (Number(r.amount) * 0.13).toFixed(2);
-    const total = (Number(r.amount) * 1.13).toFixed(2);
-    csv += `${r.date},"${String(r.vendor).replace(/"/g,'""')}","${c.label}",${Number(r.amount).toFixed(2)},${hst},${total},"${String(r.notes||'').replace(/"/g,'""')}"\n`;
+    if (r.type === 'income') {
+      const hst   = Number(r.hst || 0).toFixed(2);
+      const total = Number(r.totalInvoiced || 0).toFixed(2);
+      csv += `Income,${r.date},"${String(r.clientName||'').replace(/"/g,'""')}","${String(r.jobType||'').replace(/"/g,'""')}",${Number(r.amount||0).toFixed(2)},${hst},${total},"${String(r.notes||'').replace(/"/g,'""')}"\n`;
+    } else {
+      const c     = catById(r.cat);
+      const hst   = (Number(r.amount) * 0.13).toFixed(2);
+      const total = (Number(r.amount) * 1.13).toFixed(2);
+      csv += `Expense,${r.date},"${String(r.vendor||'').replace(/"/g,'""')}","${c.label}",${Number(r.amount).toFixed(2)},${hst},${total},"${String(r.notes||'').replace(/"/g,'""')}"\n`;
+    }
   });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
@@ -761,7 +1089,7 @@ function exportCSV() {
 
 // ── CLEAR ALL ──
 async function clearAll() {
-  if (!confirm('Delete ALL receipts permanently? This cannot be undone.')) return;
+  if (!confirm('Delete ALL entries permanently? This cannot be undone.')) return;
   try {
     const snap = await db.collection('receipts').get();
     const batch = db.batch();
@@ -777,10 +1105,8 @@ window.addEventListener('beforeinstallprompt', e => {
   document.getElementById('installBanner').classList.add('show');
   document.getElementById('manualInstallBtn').style.display = 'block';
 });
-function triggerInstall() {
-  if (deferredInstall) deferredInstall.prompt();
-}
-function dismissInstall() { document.getElementById('installBanner').classList.remove('show'); }
+function triggerInstall() { if (deferredInstall) deferredInstall.prompt(); }
+function dismissInstall()  { document.getElementById('installBanner').classList.remove('show'); }
 window.addEventListener('appinstalled', () => { dismissInstall(); toast('App installed! 🎉'); });
 
 // ── SERVICE WORKER ──
