@@ -557,22 +557,20 @@ async function addReceipt() {
         if (!data.secure_url) throw new Error('No URL in response');
         imageUrl = data.secure_url;
 
-        // Send to Google Drive (organized by category) if script is set up
+        // Fire-and-forget to Google Drive — does not block save
         if (DRIVE_SCRIPT_URL) {
-          try {
-            const catNames = {
-              gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
-              vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
-              permits:'Permits & Fees', other:'Other'
-            };
-            const params = new URLSearchParams({
-              url: imageUrl,
-              category: catNames[selectedCat] || 'Other',
-              vendor: vendor,
-              date: date
-            });
-            await fetch(`${DRIVE_SCRIPT_URL}?${params}`, { redirect: 'follow' });
-          } catch { /* Drive sync failed silently — photo still saved */ }
+          const catNames = {
+            gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
+            vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
+            permits:'Permits & Fees', other:'Other'
+          };
+          const params = new URLSearchParams({
+            url: imageUrl,
+            category: catNames[selectedCat] || 'Other',
+            vendor: vendor,
+            date: date
+          });
+          fetch(`${DRIVE_SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
         }
       } catch(uploadErr) {
         toast('⚠️ ' + uploadErr.message + ' — receipt saved without image');
