@@ -551,23 +551,22 @@ function addReceipt() {
   doSave(vendor, amount, date, savedCat, notes, photoFile);
 }
 
-async function doSave(vendor, amount, date, cat, notes, photoFile) {
-  try {
-    const docRef = await db.collection('receipts').add({
-      vendor, amount, date, cat, notes, imageUrl: null,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    if (photoFile) doUpload(docRef.id, photoFile, cat, vendor, date);
-  } catch(e) {
-    console.error('Save error:', e);
-    toast('⚠️ Receipt may not have synced — check log');
-  }
+function doSave(vendor, amount, date, cat, notes, photoFile) {
+  // Generate ID client-side — no await needed, never blocks UI
+  const docRef = db.collection('receipts').doc();
+  docRef.set({
+    vendor, amount, date, cat, notes, imageUrl: null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(e => console.error('Firestore write error:', e));
+
+  if (photoFile) doUpload(docRef.id, photoFile, cat, vendor, date);
 }
 
 async function doUpload(docId, file, cat, vendor, date) {
   try {
     let blob;
     try { blob = await compressImage(file); } catch { blob = file; }
+
     const fd = new FormData();
     fd.append('file', blob);
     fd.append('upload_preset', CLOUDINARY_PRESET);
@@ -575,7 +574,9 @@ async function doUpload(docId, file, cat, vendor, date) {
     const data = await res.json();
     if (!data.secure_url) throw new Error(data.error?.message || 'No URL returned');
 
-    await db.collection('receipts').doc(docId).update({ imageUrl: data.secure_url });
+    // Fire Firestore update without awaiting — same server-confirmation hang would block Drive
+    db.collection('receipts').doc(docId).update({ imageUrl: data.secure_url })
+      .catch(e => console.error('imageUrl update error:', e));
 
     if (DRIVE_SCRIPT_URL) {
       const catNames = {
@@ -586,9 +587,7 @@ async function doUpload(docId, file, cat, vendor, date) {
       const params = new URLSearchParams({
         url: data.secure_url, category: catNames[cat] || 'Other', vendor, date
       });
-      // Image ping bypasses CORS on script.google.com redirects
-      const ping = new Image();
-      ping.src = `${DRIVE_SCRIPT_URL}?${params}`;
+      fetch(`${DRIVE_SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
     }
   } catch(e) {
     console.error('Upload error:', e.message);
