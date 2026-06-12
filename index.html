@@ -491,18 +491,27 @@ function previewPhoto(input) {
 }
 
 async function compressImage(file) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
+    const cleanup = () => { try { URL.revokeObjectURL(url); } catch {} };
+    img.onerror = () => { cleanup(); reject(new Error('Image load failed')); };
     img.onload = () => {
-      const MAX = 1400;
-      let w = img.width, h = img.height;
-      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      c.toBlob(resolve, 'image/jpeg', 0.78);
+      cleanup();
+      try {
+        const MAX = 1400;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas unavailable')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        c.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error('toBlob returned null'));
+        }, 'image/jpeg', 0.78);
+      } catch(e) { reject(e); }
     };
     img.src = url;
   });
@@ -528,9 +537,11 @@ async function addReceipt() {
     let imageUrl = null;
     const fileInput = document.getElementById('fileInput');
     if (fileInput.files[0]) {
-      const blob = await compressImage(fileInput.files[0]);
+      const original = fileInput.files[0];
+      let blob;
+      try { blob = await compressImage(original); } catch { blob = original; }
       const ref = storage.ref(`receipts/${Date.now()}`);
-      await ref.put(blob, { contentType: 'image/jpeg' });
+      await ref.put(blob, { contentType: blob.type || 'image/jpeg' });
       imageUrl = await ref.getDownloadURL();
     }
 
