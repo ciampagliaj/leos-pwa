@@ -526,62 +526,27 @@ async function addReceipt() {
   const date   = document.getElementById('date').value;
   const notes  = document.getElementById('notes').value.trim();
 
-  if (!vendor)            { toast('⚠️ Enter a vendor name'); return; }
+  if (!vendor)                { toast('⚠️ Enter a vendor name'); return; }
   if (!amount || amount <= 0) { toast('⚠️ Enter an amount'); return; }
-  if (!date)              { toast('⚠️ Select a date'); return; }
-  if (!selectedCat)       { toast('⚠️ Select a category'); return; }
+  if (!date)                  { toast('⚠️ Select a date'); return; }
+  if (!selectedCat)           { toast('⚠️ Select a category'); return; }
 
   const btn = document.getElementById('saveBtn');
   btn.disabled = true;
   btn.textContent = 'Saving…';
 
   try {
-    let imageUrl = null;
     const fileInput = document.getElementById('fileInput');
-    if (fileInput.files[0]) {
-      try {
-        const original = fileInput.files[0];
-        let blob;
-        try { blob = await compressImage(original); } catch { blob = original; }
-        const fd = new FormData();
-        fd.append('file', blob);
-        fd.append('upload_preset', CLOUDINARY_PRESET);
-        fd.append('folder', 'leos-receipts');
-        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Upload timed out after 30s')), 30000));
-        const res = await Promise.race([
-          fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd }),
-          timeout
-        ]);
-        const data = await res.json();
-        if (data.error) throw new Error('Cloudinary: ' + data.error.message);
-        if (!data.secure_url) throw new Error('No URL in response');
-        imageUrl = data.secure_url;
+    const photoFile = fileInput.files[0] || null;
 
-        // Fire-and-forget to Google Drive — does not block save
-        if (DRIVE_SCRIPT_URL) {
-          const catNames = {
-            gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
-            vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
-            permits:'Permits & Fees', other:'Other'
-          };
-          const params = new URLSearchParams({
-            url: imageUrl,
-            category: catNames[selectedCat] || 'Other',
-            vendor: vendor,
-            date: date
-          });
-          fetch(`${DRIVE_SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
-        }
-      } catch(uploadErr) {
-        toast('⚠️ ' + uploadErr.message + ' — receipt saved without image');
-      }
-    }
-
-    await db.collection('receipts').add({
-      vendor, amount, date, cat: selectedCat, notes, imageUrl,
+    // Save receipt immediately with no image so form can reset right away
+    const docRef = await db.collection('receipts').add({
+      vendor, amount, date, cat: selectedCat, notes,
+      imageUrl: null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    // Reset form instantly — user can add next receipt now
     document.getElementById('vendor').value = '';
     document.getElementById('amount').value = '';
     document.getElementById('notes').value  = '';
@@ -589,16 +554,53 @@ async function addReceipt() {
     document.getElementById('previewImg').classList.add('hidden');
     document.getElementById('photoBtn').style.display = 'flex';
     fileInput.value = '';
+    const savedCat = selectedCat;
     selectedCat = null;
     buildCatGrid();
+    btn.disabled = false;
+    btn.textContent = 'Save Receipt ✓';
     toast('Receipt saved ✓');
-    switchTab('log');
+
+    // Upload photo in background — updates the receipt when done
+    if (photoFile) uploadPhoto(docRef.id, photoFile, savedCat, vendor, date);
+
   } catch(e) {
     console.error(e);
     toast('❌ Save failed — check connection');
-  } finally {
     btn.disabled = false;
     btn.textContent = 'Save Receipt ✓';
+  }
+}
+
+async function uploadPhoto(docId, file, cat, vendor, date) {
+  try {
+    let blob;
+    try { blob = await compressImage(file); } catch { blob = file; }
+    const fd = new FormData();
+    fd.append('file', blob);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    fd.append('folder', 'leos-receipts');
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    if (!data.secure_url) throw new Error('No URL returned');
+    const imageUrl = data.secure_url;
+
+    // Update the receipt with the image URL
+    await db.collection('receipts').doc(docId).update({ imageUrl });
+
+    // Fire-and-forget to Google Drive
+    if (DRIVE_SCRIPT_URL) {
+      const catNames = {
+        gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
+        vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
+        permits:'Permits & Fees', other:'Other'
+      };
+      const params = new URLSearchParams({ url: imageUrl, category: catNames[cat] || 'Other', vendor, date });
+      fetch(`${DRIVE_SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
+    }
+  } catch(e) {
+    console.error('Photo upload failed:', e.message);
   }
 }
 
