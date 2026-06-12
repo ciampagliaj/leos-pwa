@@ -563,6 +563,9 @@ function doSave(vendor, amount, date, cat, notes, photoFile) {
 }
 
 async function doUpload(docId, file, cat, vendor, date) {
+  let imageUrl = null;
+
+  // Cloudinary — own try/catch so failures don't kill Drive
   try {
     let blob;
     try { blob = await compressImage(file); } catch { blob = file; }
@@ -574,23 +577,27 @@ async function doUpload(docId, file, cat, vendor, date) {
     const data = await res.json();
     if (!data.secure_url) throw new Error(data.error?.message || 'No URL returned');
 
-    // Fire Firestore update without awaiting — same server-confirmation hang would block Drive
-    db.collection('receipts').doc(docId).update({ imageUrl: data.secure_url })
+    imageUrl = data.secure_url;
+    db.collection('receipts').doc(docId).update({ imageUrl })
       .catch(e => console.error('imageUrl update error:', e));
-
-    if (DRIVE_SCRIPT_URL) {
-      const catNames = {
-        gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
-        vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
-        permits:'Permits & Fees', other:'Other'
-      };
-      const params = new URLSearchParams({
-        url: data.secure_url, category: catNames[cat] || 'Other', vendor, date
-      });
-      fetch(`${DRIVE_SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
-    }
   } catch(e) {
-    console.error('Upload error:', e.message);
+    console.error('Cloudinary error:', e.message);
+  }
+
+  // Drive — runs independently after Cloudinary block, always attempted when we have a URL
+  if (DRIVE_SCRIPT_URL && imageUrl) {
+    const catNames = {
+      gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
+      vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
+      permits:'Permits & Fees', other:'Other'
+    };
+    const params = new URLSearchParams({
+      url: imageUrl, category: catNames[cat] || 'Other', vendor, date
+    });
+    console.log('[Drive] sending request:', `${DRIVE_SCRIPT_URL}?${params}`);
+    fetch(`${DRIVE_SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
+  } else {
+    console.log('[Drive] skipped — imageUrl:', imageUrl, 'DRIVE_SCRIPT_URL:', !!DRIVE_SCRIPT_URL);
   }
 }
 

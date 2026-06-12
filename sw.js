@@ -1,4 +1,4 @@
-const CACHE = 'leos-receipts-v5';
+const CACHE = 'leos-receipts-v6';
 const ASSETS = [
   './index.html',
   './manifest.json',
