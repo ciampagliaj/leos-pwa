@@ -179,7 +179,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
 <!-- PIN SCREEN -->
 <div id="pinScreen" class="screen">
@@ -365,8 +364,10 @@ firebase.initializeApp({
   appId: "1:56489776115:web:d86fa282ccbbd3afe97886"
 });
 const db = firebase.firestore();
-const storage = firebase.storage();
 db.enablePersistence().catch(() => {});
+
+const CLOUDINARY_CLOUD = 'duuuutrs2';
+const CLOUDINARY_PRESET = 'leos-receipts';
 
 // ── CONSTANTS ──
 const PIN = '1210';
@@ -541,11 +542,16 @@ async function addReceipt() {
         const original = fileInput.files[0];
         let blob;
         try { blob = await compressImage(original); } catch { blob = original; }
-        const ref = storage.ref(`receipts/${Date.now()}`);
-        const uploadTask = ref.put(blob, { contentType: blob.type || 'image/jpeg' });
-        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 25000));
-        await Promise.race([uploadTask, timeout]);
-        imageUrl = await ref.getDownloadURL();
+        const fd = new FormData();
+        fd.append('file', blob);
+        fd.append('upload_preset', CLOUDINARY_PRESET);
+        fd.append('folder', 'leos-receipts');
+        const upload = fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
+        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
+        const res = await Promise.race([upload, timeout]);
+        const data = await res.json();
+        if (!data.secure_url) throw new Error('No URL returned');
+        imageUrl = data.secure_url;
       } catch {
         toast('⚠️ Photo upload failed — receipt saved without image');
       }
@@ -667,9 +673,6 @@ async function deleteCurrentReceipt() {
   closeModal();
   try {
     await db.collection('receipts').doc(r._id).delete();
-    if (r.imageUrl) {
-      try { await storage.refFromURL(r.imageUrl).delete(); } catch {}
-    }
     toast('Receipt deleted');
   } catch { toast('❌ Delete failed'); }
 }
