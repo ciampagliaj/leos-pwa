@@ -368,6 +368,7 @@ db.enablePersistence().catch(() => {});
 
 const CLOUDINARY_CLOUD = 'duuuutrs2';
 const CLOUDINARY_PRESET = 'leos-receipts';
+let DRIVE_SCRIPT_URL = null; // set after Apps Script is deployed
 
 // ── CONSTANTS ──
 const PIN = '1210';
@@ -546,14 +547,35 @@ async function addReceipt() {
         fd.append('file', blob);
         fd.append('upload_preset', CLOUDINARY_PRESET);
         fd.append('folder', 'leos-receipts');
-        const upload = fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
-        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
-        const res = await Promise.race([upload, timeout]);
+        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Upload timed out after 30s')), 30000));
+        const res = await Promise.race([
+          fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd }),
+          timeout
+        ]);
         const data = await res.json();
-        if (!data.secure_url) throw new Error('No URL returned');
+        if (data.error) throw new Error('Cloudinary: ' + data.error.message);
+        if (!data.secure_url) throw new Error('No URL in response');
         imageUrl = data.secure_url;
-      } catch {
-        toast('⚠️ Photo upload failed — receipt saved without image');
+
+        // Send to Google Drive (organized by category) if script is set up
+        if (DRIVE_SCRIPT_URL) {
+          try {
+            const catNames = {
+              gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
+              vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
+              permits:'Permits & Fees', other:'Other'
+            };
+            const params = new URLSearchParams({
+              url: imageUrl,
+              category: catNames[selectedCat] || 'Other',
+              vendor: vendor,
+              date: date
+            });
+            await fetch(`${DRIVE_SCRIPT_URL}?${params}`, { redirect: 'follow' });
+          } catch { /* Drive sync failed silently — photo still saved */ }
+        }
+      } catch(uploadErr) {
+        toast('⚠️ ' + uploadErr.message + ' — receipt saved without image');
       }
     }
 
