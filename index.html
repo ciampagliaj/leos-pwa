@@ -12,31 +12,22 @@
 <title>Leo's Receipt Tracker</title>
 <style>
   :root {
-    --blue: #1A5276;
-    --blue-dark: #154360;
-    --blue-light: #D6EAF8;
-    --green: #1E8449;
-    --green-light: #D5F5E3;
-    --gray: #F2F3F4;
-    --mid-gray: #BDC3C7;
-    --danger: #E74C3C;
-    --text: #1a1a1a;
-    --text-muted: #888;
-    --border: #e0e0e0;
-    --white: #fff;
-    --radius: 12px;
+    --blue: #1A5276; --blue-dark: #154360; --blue-light: #D6EAF8;
+    --danger: #E74C3C; --text: #1a1a1a; --text-muted: #888;
+    --border: #e0e0e0; --white: #fff; --radius: 12px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; overflow: hidden; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: var(--text); }
 
-  /* ── SCREENS ── */
-  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; background: #f0f2f5; }
-  .screen.hidden { display: none; }
+  .hidden { display: none !important; }
 
-  /* ── PIN SCREEN ── */
-  #pinScreen { background: var(--blue); align-items: center; justify-content: center; gap: 0; }
+  /* SCREENS */
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; background: #f0f2f5; }
+
+  /* PIN */
+  #pinScreen { background: var(--blue); align-items: center; justify-content: center; }
   .pin-logo { font-size: 48px; margin-bottom: 8px; }
   .pin-title { color: white; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
   .pin-sub { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 40px; }
@@ -50,29 +41,28 @@
   .pin-key.del { font-size: 20px; }
   .pin-key.empty { background: transparent; pointer-events: none; }
   .pin-error { color: rgba(255,100,100,0.9); font-size: 13px; margin-top: -20px; margin-bottom: 8px; height: 18px; }
-  .pin-setup-hint { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 24px; text-align: center; max-width: 220px; }
 
-  /* ── HEADER ── */
-  .app-header { background: var(--blue); color: white; padding: 12px 16px 12px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+  /* HEADER */
+  .app-header { background: var(--blue); color: white; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top,0px)); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
   .app-header h1 { font-size: 17px; font-weight: 700; }
   .app-header span { font-size: 12px; opacity: 0.75; display: block; margin-top: 1px; }
   .header-actions { display: flex; gap: 8px; }
   .icon-btn { background: rgba(255,255,255,0.15); border: none; color: white; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
   .icon-btn:active { background: rgba(255,255,255,0.3); }
 
-  /* ── TABS ── */
+  /* TABS */
   .tab-bar { display: flex; background: white; border-bottom: 1px solid var(--border); flex-shrink: 0; }
   .tab { flex: 1; padding: 11px 4px; text-align: center; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-muted); border-bottom: 3px solid transparent; transition: all 0.15s; }
   .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
 
-  /* ── SCROLLABLE CONTENT ── */
+  /* SCROLL */
   .scroll-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px calc(14px + var(--safe-bottom)); }
 
-  /* ── CARDS ── */
+  /* CARDS */
   .card { background: white; border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
   .card h2 { font-size: 15px; font-weight: 600; color: var(--blue); margin-bottom: 14px; }
 
-  /* ── FORM ── */
+  /* FORM */
   .form-group { margin-bottom: 13px; }
   label.field-label { font-size: 13px; font-weight: 500; color: #444; display: block; margin-bottom: 5px; }
   input[type="text"], input[type="number"], input[type="date"], select, textarea {
@@ -83,46 +73,51 @@
   input:focus, select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,82,118,0.12); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 
-  /* ── PHOTO ── */
+  /* PHOTO */
   .photo-zone { width: 100%; padding: 28px 16px; border: 2px dashed #b0c4d8; border-radius: 10px; background: #f7fafc; cursor: pointer; text-align: center; color: #666; font-size: 14px; margin-bottom: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .photo-zone svg { width: 32px; height: 32px; color: var(--blue); }
   .photo-zone strong { color: var(--blue); }
   .photo-zone:active { background: #edf4fb; }
-  .preview-img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 9px; margin-bottom: 14px; display: none; }
+  .preview-img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 9px; margin-bottom: 14px; }
   input[type="file"] { display: none; }
 
-  /* ── CATEGORY GRID ── */
-  .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 13px; }
+  /* CATEGORY */
+  .cat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 13px; }
   .cat-pill { padding: 10px 8px; border: 1.5px solid #d0d7de; border-radius: 10px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.12s; background: white; }
   .cat-pill .icon { font-size: 22px; display: block; margin-bottom: 3px; }
   .cat-pill.selected { border-color: transparent; color: white; }
   .cat-pill:active { transform: scale(0.96); }
 
-  /* ── SAVE BUTTON ── */
-  .btn-save { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px; }
+  /* SAVE BTN */
+  .btn-save { width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: 700; cursor: pointer; }
   .btn-save:active { background: var(--blue-dark); transform: scale(0.98); }
+  .btn-save:disabled { background: #aaa; cursor: not-allowed; transform: none; }
 
-  /* ── FILTERS ── */
+  /* FILTERS */
   .filters { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
   .filters::-webkit-scrollbar { display: none; }
   .filter-btn { padding: 7px 14px; border: 1px solid var(--border); border-radius: 99px; font-size: 13px; background: white; cursor: pointer; white-space: nowrap; color: #444; flex-shrink: 0; }
   .filter-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
 
-  /* ── RECEIPT LIST ── */
-  .receipt-card { background: white; border-radius: 10px; padding: 13px; margin-bottom: 9px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); display: flex; align-items: center; gap: 11px; }
+  /* RECEIPT LIST */
+  .receipt-card { background: white; border-radius: 10px; padding: 13px; margin-bottom: 9px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); display: flex; align-items: center; gap: 11px; cursor: pointer; }
+  .receipt-card:active { opacity: 0.8; }
   .receipt-dot { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
   .receipt-info { flex: 1; min-width: 0; }
   .receipt-vendor { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .receipt-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .receipt-amount { font-size: 17px; font-weight: 700; color: var(--blue); flex-shrink: 0; }
-  .receipt-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 22px; padding: 0 0 0 6px; line-height: 1; }
-  .receipt-del:active { color: var(--danger); }
+
+  /* LOADING */
+  .loading-state { text-align: center; padding: 56px 20px; color: #aaa; }
+  .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   .empty-state { text-align: center; padding: 56px 20px; color: #bbb; }
   .empty-state .big { font-size: 52px; margin-bottom: 12px; }
   .empty-state p { font-size: 14px; line-height: 1.6; }
 
-  /* ── SUMMARY ── */
+  /* SUMMARY */
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
   .stat-box { background: white; border-radius: var(--radius); padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
   .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
@@ -135,19 +130,10 @@
   .cat-row .bar-bg { width: 70px; height: 6px; background: #f0f0f0; border-radius: 99px; overflow: hidden; flex-shrink: 0; }
   .cat-row .bar-fill { height: 100%; border-radius: 99px; }
   .cat-row .amt { font-size: 14px; font-weight: 600; min-width: 64px; text-align: right; }
-
   .export-btn { width: 100%; padding: 13px; background: white; color: var(--blue); border: 1.5px solid var(--blue); border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
   .export-btn:active { background: var(--blue-light); }
 
-  /* ── INSTALL BANNER ── */
-  #installBanner { display: none; position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 14px; right: 14px; background: var(--blue); color: white; border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); z-index: 999; flex-direction: row; align-items: center; gap: 12px; }
-  #installBanner.show { display: flex; }
-  .install-text { flex: 1; font-size: 14px; line-height: 1.4; }
-  .install-text strong { display: block; font-size: 15px; margin-bottom: 2px; }
-  .btn-install { background: white; color: var(--blue); border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
-  .btn-dismiss { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0; }
-
-  /* ── SETTINGS ── */
+  /* SETTINGS */
   .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid #f5f5f5; }
   .settings-row:last-child { border-bottom: none; }
   .settings-label { font-size: 15px; }
@@ -157,23 +143,52 @@
   .btn-sm.danger { border-color: var(--danger); color: var(--danger); }
   .btn-sm.danger:active { background: #FDEDEC; }
 
-  /* ── TOAST ── */
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; display: flex; align-items: flex-end; }
+  .modal-sheet { background: white; border-radius: 20px 20px 0 0; width: 100%; max-height: 88vh; overflow-y: auto; padding: 0 20px calc(24px + var(--safe-bottom)); }
+  .modal-handle-wrap { display: flex; justify-content: center; padding: 12px 0 8px; }
+  .modal-handle { width: 36px; height: 4px; background: #ddd; border-radius: 99px; }
+  .modal-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .modal-icon { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+  .modal-vendor { font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .modal-cat-label { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+  .modal-amount { font-size: 30px; font-weight: 800; color: var(--blue); margin-bottom: 16px; }
+  .modal-amount span { font-size: 14px; font-weight: 500; color: #888; }
+  .modal-img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 12px; background: #f5f5f5; margin-bottom: 16px; cursor: zoom-in; display: block; }
+  .modal-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+  .modal-row:last-of-type { border-bottom: none; }
+  .modal-row-label { color: var(--text-muted); }
+  .modal-row-val { font-weight: 500; text-align: right; max-width: 60%; }
+  .modal-del { width: 100%; padding: 13px; margin-top: 16px; background: none; border: 1.5px solid var(--danger); border-radius: 10px; color: var(--danger); font-size: 15px; font-weight: 600; cursor: pointer; }
+  .modal-del:active { background: #FDEDEC; }
+
+  /* INSTALL BANNER */
+  #installBanner { display: none; position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 14px; right: 14px; background: var(--blue); color: white; border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); z-index: 500; flex-direction: row; align-items: center; gap: 12px; }
+  #installBanner.show { display: flex; }
+  .install-text { flex: 1; font-size: 14px; line-height: 1.4; }
+  .install-text strong { display: block; font-size: 15px; margin-bottom: 2px; }
+  .btn-install { background: white; color: var(--blue); border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+  .btn-dismiss { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0; }
+
+  /* TOAST */
   #toast { position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: #2C3E50; color: white; padding: 10px 20px; border-radius: 99px; font-size: 14px; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 9999; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-<!-- ── PIN SCREEN ── -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+
+<!-- PIN SCREEN -->
 <div id="pinScreen" class="screen">
   <div class="pin-logo">🔧</div>
   <div class="pin-title">Leo's Receipts</div>
-  <div class="pin-sub">Leo's Plumbing & Irrigation</div>
+  <div class="pin-sub">Leo's Plumbing &amp; Irrigation</div>
   <div class="pin-dots" id="pinDots">
-    <div class="pin-dot"></div>
-    <div class="pin-dot"></div>
-    <div class="pin-dot"></div>
-    <div class="pin-dot"></div>
+    <div class="pin-dot"></div><div class="pin-dot"></div>
+    <div class="pin-dot"></div><div class="pin-dot"></div>
   </div>
   <div class="pin-error" id="pinError"></div>
   <div class="pin-pad">
@@ -190,20 +205,18 @@
     <button class="pin-key" onclick="pinKey('0')">0</button>
     <button class="pin-key del" onclick="pinDel()">⌫</button>
   </div>
-  <div class="pin-setup-hint" id="pinHint"></div>
 </div>
 
-<!-- ── MAIN APP ── -->
+<!-- MAIN APP -->
 <div id="appScreen" class="screen hidden">
-
   <div class="app-header">
     <div>
       <h1>🔧 Leo's Receipts</h1>
-      <span>Leo's Plumbing & Irrigation</span>
+      <span>Leo's Plumbing &amp; Irrigation</span>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="switchTab('settings')" title="Settings">⚙️</button>
-      <button class="icon-btn" onclick="lockApp()" title="Lock">🔒</button>
+      <button class="icon-btn" onclick="switchTab('settings')">⚙️</button>
+      <button class="icon-btn" onclick="lockApp()">🔒</button>
     </div>
   </div>
 
@@ -214,26 +227,24 @@
     <div class="tab" id="tab-btn-settings" onclick="switchTab('settings')">Settings</div>
   </div>
 
-  <!-- ADD TAB -->
+  <!-- ADD -->
   <div id="tab-add" class="scroll-content">
     <div class="card">
       <h2>New receipt</h2>
-
-      <label onclick="document.getElementById('fileInput').click()" style="cursor:pointer; display:block;">
+      <label onclick="document.getElementById('fileInput').click()" style="cursor:pointer;display:block;">
         <div class="photo-zone" id="photoBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
           <strong>Tap to take photo or choose file</strong>
-          <span style="font-size:12px; color:#999;">Optional — JPG or PNG</span>
+          <span style="font-size:12px;color:#999;">Optional — JPG or PNG</span>
         </div>
       </label>
       <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="previewPhoto(this)">
-      <img id="previewImg" class="preview-img" alt="Receipt preview">
+      <img id="previewImg" class="preview-img hidden" alt="Receipt preview">
 
       <div class="form-group">
         <label class="field-label">Vendor / store name</label>
         <input type="text" id="vendor" placeholder="e.g. Home Depot, Esso, Amazon" autocomplete="off">
       </div>
-
       <div class="row2">
         <div class="form-group">
           <label class="field-label">Amount (before HST)</label>
@@ -244,28 +255,25 @@
           <input type="date" id="date">
         </div>
       </div>
-
       <div class="form-group">
         <label class="field-label">Category</label>
         <div class="cat-grid" id="catGrid"></div>
       </div>
-
       <div class="form-group">
         <label class="field-label">Notes (optional)</label>
         <input type="text" id="notes" placeholder="Job #, description, job site..." autocomplete="off">
       </div>
-
-      <button class="btn-save" onclick="addReceipt()">Save Receipt ✓</button>
+      <button class="btn-save" id="saveBtn" onclick="addReceipt()">Save Receipt ✓</button>
     </div>
   </div>
 
-  <!-- LOG TAB -->
+  <!-- LOG -->
   <div id="tab-log" class="scroll-content hidden">
     <div class="filters" id="filters"></div>
     <div id="receiptList"></div>
   </div>
 
-  <!-- SUMMARY TAB -->
+  <!-- SUMMARY -->
   <div id="tab-summary" class="scroll-content hidden">
     <div class="stat-grid">
       <div class="stat-box">
@@ -286,18 +294,8 @@
     <button class="export-btn" onclick="exportCSV()">⬇ Export CSV (for Wave / accountant)</button>
   </div>
 
-  <!-- SETTINGS TAB -->
+  <!-- SETTINGS -->
   <div id="tab-settings" class="scroll-content hidden">
-    <div class="card">
-      <h2>Security</h2>
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">Change PIN</div>
-          <div class="settings-sub">Set a new 4-digit PIN</div>
-        </div>
-        <button class="btn-sm" onclick="startPinChange()">Change</button>
-      </div>
-    </div>
     <div class="card">
       <h2>Data</h2>
       <div class="settings-row">
@@ -310,7 +308,7 @@
       <div class="settings-row">
         <div>
           <div class="settings-label">Delete all data</div>
-          <div class="settings-sub">Permanently remove all receipts</div>
+          <div class="settings-sub">Permanently remove all receipts from the cloud</div>
         </div>
         <button class="btn-sm danger" onclick="clearAll()">Delete</button>
       </div>
@@ -320,21 +318,28 @@
       <div class="settings-row">
         <div>
           <div class="settings-label">Add to Home Screen</div>
-          <div class="settings-sub">iPhone: tap Share → Add to Home Screen<br>Android: tap menu → Add to Home Screen</div>
+          <div class="settings-sub">iPhone: Share → Add to Home Screen<br>Android: menu → Add to Home Screen</div>
         </div>
         <button class="btn-sm" id="manualInstallBtn" onclick="triggerInstall()" style="display:none">Install</button>
       </div>
     </div>
-    <div class="card" style="background: #f7f9fa; box-shadow: none; border: 1px solid #e8e8e8;">
-      <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-        <strong style="color: var(--text);">Leo's Plumbing & Irrigation</strong><br>
+    <div class="card" style="background:#f7f9fa;box-shadow:none;border:1px solid #e8e8e8;">
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
+        <strong style="color:var(--text);">Leo's Plumbing &amp; Irrigation</strong><br>
         Windsor, Ontario<br>
-        Receipt Tracker v1.0<br>
-        Data stored locally on this device only.
+        Receipt Tracker v2.0<br>
+        Data synced to cloud — shared across all devices.
       </div>
     </div>
   </div>
+</div>
 
+<!-- RECEIPT MODAL -->
+<div id="receiptModal" class="modal-overlay hidden" onclick="handleOverlayClick(event)">
+  <div class="modal-sheet" id="modalSheet">
+    <div class="modal-handle-wrap"><div class="modal-handle"></div></div>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <!-- INSTALL BANNER -->
@@ -347,11 +352,24 @@
   <button class="btn-dismiss" onclick="dismissInstall()">×</button>
 </div>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script>
+// ── FIREBASE ──
+firebase.initializeApp({
+  apiKey: "AIzaSyCIlJ-tmSYj1hDYvZQK2td9PzotmmuibEg",
+  authDomain: "leo-s-receipts.firebaseapp.com",
+  projectId: "leo-s-receipts",
+  storageBucket: "leo-s-receipts.firebasestorage.app",
+  messagingSenderId: "56489776115",
+  appId: "1:56489776115:web:d86fa282ccbbd3afe97886"
+});
+const db = firebase.firestore();
+const storage = firebase.storage();
+db.enablePersistence().catch(() => {});
+
 // ── CONSTANTS ──
+const PIN = '1210';
 const CATS = [
   { id: 'gas',       label: 'Gas & Fuel',        icon: '⛽', color: '#E67E22', bg: '#FEF9E7' },
   { id: 'materials', label: 'Materials & Parts',  icon: '🔩', color: '#2980B9', bg: '#EBF5FB' },
@@ -364,136 +382,88 @@ const CATS = [
 ];
 
 // ── STATE ──
-let receipts = JSON.parse(localStorage.getItem('leos_receipts') || '[]');
+let receipts = [];
 let selectedCat = null;
 let filterCat = 'all';
 let pinEntry = '';
-let pinMode = 'verify'; // 'verify' | 'set-new' | 'set-confirm'
-let pinNewTemp = '';
+let currentTab = 'add';
+let loading = true;
+let currentReceipt = null;
 let deferredInstall = null;
 
-// ── STORAGE ──
-function save() { localStorage.setItem('leos_receipts', JSON.stringify(receipts)); }
 function catById(id) { return CATS.find(c => c.id === id) || CATS[7]; }
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 // ── TOAST ──
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2200);
+  setTimeout(() => el.classList.remove('show'), 2400);
 }
 
-// ── PIN LOGIC ──
-function initPin() {
-  const stored = localStorage.getItem('leos_pin');
-  if (!stored) {
-    pinMode = 'set-new';
-    document.getElementById('pinHint').textContent = 'First time? Set a 4-digit PIN to protect your data.';
-    updatePinLabel('Choose a 4-digit PIN');
-  } else {
-    pinMode = 'verify';
-    updatePinLabel('Enter your PIN');
-  }
-}
-
-function updatePinLabel(text) {
-  document.querySelector('#pinScreen .pin-sub').textContent = text;
-}
-
+// ── PIN ──
 function pinKey(digit) {
   if (pinEntry.length >= 4) return;
   pinEntry += digit;
   updateDots();
   if (pinEntry.length === 4) setTimeout(processPin, 120);
 }
-
 function pinDel() {
   pinEntry = pinEntry.slice(0, -1);
   updateDots();
   document.getElementById('pinError').textContent = '';
 }
-
-function updateDots(state = 'normal') {
-  const dots = document.querySelectorAll('.pin-dot');
-  dots.forEach((d, i) => {
+function updateDots(state) {
+  document.querySelectorAll('.pin-dot').forEach((d, i) => {
     d.classList.toggle('filled', i < pinEntry.length);
     d.classList.toggle('error', state === 'error');
   });
 }
-
 function processPin() {
-  if (pinMode === 'verify') {
-    const stored = localStorage.getItem('leos_pin');
-    if (pinEntry === stored) {
-      document.getElementById('pinScreen').classList.add('hidden');
-      document.getElementById('appScreen').classList.remove('hidden');
-      pinEntry = '';
-      updateDots();
-    } else {
-      updateDots('error');
-      document.getElementById('pinError').textContent = 'Incorrect PIN — try again';
-      setTimeout(() => {
-        pinEntry = '';
-        updateDots();
-        document.getElementById('pinError').textContent = '';
-      }, 1000);
-    }
-  } else if (pinMode === 'set-new') {
-    pinNewTemp = pinEntry;
+  if (pinEntry === PIN) {
+    document.getElementById('pinScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.remove('hidden');
     pinEntry = '';
     updateDots();
-    pinMode = 'set-confirm';
-    updatePinLabel('Confirm your PIN');
-    document.getElementById('pinHint').textContent = 'Enter the same PIN again to confirm.';
-  } else if (pinMode === 'set-confirm') {
-    if (pinEntry === pinNewTemp) {
-      localStorage.setItem('leos_pin', pinEntry);
+  } else {
+    updateDots('error');
+    document.getElementById('pinError').textContent = 'Incorrect PIN — try again';
+    setTimeout(() => {
       pinEntry = '';
-      pinMode = 'verify';
-      document.getElementById('pinScreen').classList.add('hidden');
-      document.getElementById('appScreen').classList.remove('hidden');
-      toast('PIN set successfully 🔒');
-    } else {
-      updateDots('error');
-      document.getElementById('pinError').textContent = 'PINs don\'t match — try again';
-      setTimeout(() => {
-        pinEntry = '';
-        pinNewTemp = '';
-        pinMode = 'set-new';
-        updateDots();
-        updatePinLabel('Choose a 4-digit PIN');
-        document.getElementById('pinError').textContent = '';
-        document.getElementById('pinHint').textContent = 'Set a 4-digit PIN to protect your data.';
-      }, 1000);
-    }
+      updateDots();
+      document.getElementById('pinError').textContent = '';
+    }, 1000);
   }
 }
-
 function lockApp() {
   document.getElementById('appScreen').classList.add('hidden');
   document.getElementById('pinScreen').classList.remove('hidden');
   pinEntry = '';
-  pinMode = 'verify';
   updateDots();
-  updatePinLabel('Enter your PIN');
-}
-
-function startPinChange() {
-  lockApp();
-  pinMode = 'set-new';
-  updatePinLabel('Choose a new PIN');
-  document.getElementById('pinHint').textContent = 'Enter a new 4-digit PIN.';
 }
 
 // ── TABS ──
 function switchTab(t) {
+  currentTab = t;
   ['add','log','summary','settings'].forEach(id => {
     document.getElementById('tab-' + id).classList.toggle('hidden', id !== t);
     document.getElementById('tab-btn-' + id).classList.toggle('active', id === t);
   });
   if (t === 'log') { buildFilters(); buildList(); }
   if (t === 'summary') buildSummary();
+}
+
+// ── FIRESTORE SYNC ──
+function startSync() {
+  db.collection('receipts').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    loading = false;
+    receipts = snap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+    if (currentTab === 'log') { buildFilters(); buildList(); }
+    if (currentTab === 'summary') buildSummary();
+  }, () => toast('⚠️ Sync error — check connection'));
 }
 
 // ── CATEGORY GRID ──
@@ -516,37 +486,77 @@ function previewPhoto(input) {
   if (!file) return;
   const img = document.getElementById('previewImg');
   img.src = URL.createObjectURL(file);
-  img.style.display = 'block';
+  img.classList.remove('hidden');
   document.getElementById('photoBtn').style.display = 'none';
 }
 
+async function compressImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1400;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(resolve, 'image/jpeg', 0.78);
+    };
+    img.src = url;
+  });
+}
+
 // ── ADD RECEIPT ──
-function addReceipt() {
+async function addReceipt() {
   const vendor = document.getElementById('vendor').value.trim();
   const amount = parseFloat(document.getElementById('amount').value);
-  const date = document.getElementById('date').value;
-  const notes = document.getElementById('notes').value.trim();
+  const date   = document.getElementById('date').value;
+  const notes  = document.getElementById('notes').value.trim();
 
-  if (!vendor) { toast('⚠️ Enter a vendor name'); return; }
+  if (!vendor)            { toast('⚠️ Enter a vendor name'); return; }
   if (!amount || amount <= 0) { toast('⚠️ Enter an amount'); return; }
-  if (!date) { toast('⚠️ Select a date'); return; }
-  if (!selectedCat) { toast('⚠️ Select a category'); return; }
+  if (!date)              { toast('⚠️ Select a date'); return; }
+  if (!selectedCat)       { toast('⚠️ Select a category'); return; }
 
-  receipts.unshift({ id: Date.now(), vendor, amount, date, cat: selectedCat, notes });
-  save();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
 
-  document.getElementById('vendor').value = '';
-  document.getElementById('amount').value = '';
-  document.getElementById('notes').value = '';
-  document.getElementById('date').valueAsDate = new Date();
-  document.getElementById('previewImg').style.display = 'none';
-  document.getElementById('photoBtn').style.display = 'flex';
-  document.getElementById('fileInput').value = '';
-  selectedCat = null;
-  buildCatGrid();
+  try {
+    let imageUrl = null;
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput.files[0]) {
+      const blob = await compressImage(fileInput.files[0]);
+      const ref = storage.ref(`receipts/${Date.now()}`);
+      await ref.put(blob, { contentType: 'image/jpeg' });
+      imageUrl = await ref.getDownloadURL();
+    }
 
-  toast('Receipt saved ✓');
-  switchTab('log');
+    await db.collection('receipts').add({
+      vendor, amount, date, cat: selectedCat, notes, imageUrl,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    document.getElementById('vendor').value = '';
+    document.getElementById('amount').value = '';
+    document.getElementById('notes').value  = '';
+    document.getElementById('date').valueAsDate = new Date();
+    document.getElementById('previewImg').classList.add('hidden');
+    document.getElementById('photoBtn').style.display = 'flex';
+    fileInput.value = '';
+    selectedCat = null;
+    buildCatGrid();
+    toast('Receipt saved ✓');
+    switchTab('log');
+  } catch(e) {
+    console.error(e);
+    toast('❌ Save failed — check connection');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Receipt ✓';
+  }
 }
 
 // ── LOG ──
@@ -555,7 +565,7 @@ function buildFilters() {
   el.innerHTML = '';
   const all = document.createElement('button');
   all.className = 'filter-btn' + (filterCat === 'all' ? ' active' : '');
-  all.textContent = 'All (' + receipts.length + ')';
+  all.textContent = `All (${receipts.length})`;
   all.onclick = () => { filterCat = 'all'; buildFilters(); buildList(); };
   el.appendChild(all);
   CATS.forEach(c => {
@@ -563,7 +573,7 @@ function buildFilters() {
     if (!count) return;
     const b = document.createElement('button');
     b.className = 'filter-btn' + (filterCat === c.id ? ' active' : '');
-    b.textContent = c.icon + ' ' + c.label + ' (' + count + ')';
+    b.textContent = `${c.icon} ${c.label} (${count})`;
     b.onclick = () => { filterCat = c.id; buildFilters(); buildList(); };
     el.appendChild(b);
   });
@@ -571,6 +581,10 @@ function buildFilters() {
 
 function buildList() {
   const el = document.getElementById('receiptList');
+  if (loading) {
+    el.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading receipts…</p></div>`;
+    return;
+  }
   const filtered = filterCat === 'all' ? receipts : receipts.filter(r => r.cat === filterCat);
   if (!filtered.length) {
     el.innerHTML = `<div class="empty-state"><div class="big">🧾</div><p>No receipts yet.<br>Tap <strong>+ Add</strong> to log your first one.</p></div>`;
@@ -584,50 +598,92 @@ function buildList() {
     d.innerHTML = `
       <div class="receipt-dot" style="background:${c.bg}">${c.icon}</div>
       <div class="receipt-info">
-        <div class="receipt-vendor">${r.vendor}</div>
-        <div class="receipt-meta">${c.label} · ${formatDate(r.date)}${r.notes ? ' · ' + r.notes : ''}</div>
+        <div class="receipt-vendor">${esc(r.vendor)}</div>
+        <div class="receipt-meta">${c.label} · ${fmtDate(r.date)}${r.notes ? ' · ' + esc(r.notes) : ''}${r.imageUrl ? ' · 📎' : ''}</div>
       </div>
-      <div class="receipt-amount">$${r.amount.toFixed(2)}</div>
-      <button class="receipt-del" onclick="deleteReceipt(${r.id})">×</button>
+      <div class="receipt-amount">$${Number(r.amount).toFixed(2)}</div>
     `;
+    d.onclick = () => openModal(r);
     el.appendChild(d);
   });
 }
 
-function deleteReceipt(id) {
-  if (!confirm('Delete this receipt?')) return;
-  receipts = receipts.filter(r => r.id !== id);
-  save(); buildFilters(); buildList(); 
+// ── MODAL ──
+function openModal(r) {
+  currentReceipt = r;
+  const c = catById(r.cat);
+  const hst   = (Number(r.amount) * 0.13).toFixed(2);
+  const total = (Number(r.amount) * 1.13).toFixed(2);
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-icon" style="background:${c.bg}">${c.icon}</div>
+      <div>
+        <div class="modal-vendor">${esc(r.vendor)}</div>
+        <div class="modal-cat-label">${c.label} · ${fmtDate(r.date)}</div>
+      </div>
+    </div>
+    <div class="modal-amount">$${Number(r.amount).toFixed(2)} <span>pre-HST</span></div>
+    ${r.imageUrl ? `<img class="modal-img" src="${esc(r.imageUrl)}" onclick="openFullImg()" alt="Receipt photo">` : ''}
+    <div class="modal-row"><span class="modal-row-label">HST (13%)</span><span class="modal-row-val">$${hst}</span></div>
+    <div class="modal-row"><span class="modal-row-label">Total with HST</span><span class="modal-row-val">$${total}</span></div>
+    ${r.notes ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-val">${esc(r.notes)}</span></div>` : ''}
+    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Receipt</button>
+  `;
+  document.getElementById('receiptModal').classList.remove('hidden');
 }
 
-function formatDate(s) {
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('receiptModal')) closeModal();
+}
+function closeModal() {
+  document.getElementById('receiptModal').classList.add('hidden');
+  currentReceipt = null;
+}
+function openFullImg() {
+  if (currentReceipt && currentReceipt.imageUrl) window.open(currentReceipt.imageUrl, '_blank');
+}
+
+async function deleteCurrentReceipt() {
+  if (!currentReceipt || !confirm('Delete this receipt?')) return;
+  const r = currentReceipt;
+  closeModal();
+  try {
+    await db.collection('receipts').doc(r._id).delete();
+    if (r.imageUrl) {
+      try { await storage.refFromURL(r.imageUrl).delete(); } catch {}
+    }
+    toast('Receipt deleted');
+  } catch { toast('❌ Delete failed'); }
+}
+
+function fmtDate(s) {
   if (!s) return '';
   const [y, m, d] = s.split('-');
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
+  const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${mo[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
 }
 
 // ── SUMMARY ──
 function buildSummary() {
-  const total = receipts.reduce((s, r) => s + r.amount, 0);
-  document.getElementById('totalAmt').textContent = '$' + total.toFixed(2);
+  const total = receipts.reduce((s, r) => s + Number(r.amount), 0);
+  document.getElementById('totalAmt').textContent  = '$' + total.toFixed(2);
   document.getElementById('totalCount').textContent = receipts.length + ' receipt' + (receipts.length !== 1 ? 's' : '');
 
   const now = new Date();
-  const monthReceipts = receipts.filter(r => {
-    const d = new Date(r.date);
+  const mo  = receipts.filter(r => {
+    const d = new Date(r.date + 'T00:00:00');
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  const monthTotal = monthReceipts.reduce((s, r) => s + r.amount, 0);
-  document.getElementById('monthAmt').textContent = '$' + monthTotal.toFixed(2);
-  document.getElementById('monthCount').textContent = monthReceipts.length + ' receipt' + (monthReceipts.length !== 1 ? 's' : '');
+  const moTotal = mo.reduce((s, r) => s + Number(r.amount), 0);
+  document.getElementById('monthAmt').textContent   = '$' + moTotal.toFixed(2);
+  document.getElementById('monthCount').textContent  = mo.length + ' receipt' + (mo.length !== 1 ? 's' : '');
 
   const bd = document.getElementById('catBreakdown');
   bd.innerHTML = '';
   const totals = {};
-  receipts.forEach(r => { totals[r.cat] = (totals[r.cat] || 0) + r.amount; });
+  receipts.forEach(r => { totals[r.cat] = (totals[r.cat] || 0) + Number(r.amount); });
   const max = Math.max(...Object.values(totals), 0.01);
-
   const sorted = CATS.filter(c => totals[c.id]).sort((a, b) => totals[b.id] - totals[a.id]);
   if (!sorted.length) {
     bd.innerHTML = '<div style="text-align:center;color:#bbb;padding:20px;font-size:14px;">No receipts yet</div>';
@@ -653,63 +709,48 @@ function exportCSV() {
   let csv = 'Date,Vendor,Category,Amount (pre-HST),HST (13%),Total,Notes\n';
   receipts.forEach(r => {
     const c = catById(r.cat);
-    const hst = (r.amount * 0.13).toFixed(2);
-    const total = (r.amount * 1.13).toFixed(2);
-    csv += `${r.date},"${r.vendor.replace(/"/g,'""')}","${c.label}",${r.amount.toFixed(2)},${hst},${total},"${(r.notes||'').replace(/"/g,'""')}"\n`;
+    const hst   = (Number(r.amount) * 0.13).toFixed(2);
+    const total = (Number(r.amount) * 1.13).toFixed(2);
+    csv += `${r.date},"${String(r.vendor).replace(/"/g,'""')}","${c.label}",${Number(r.amount).toFixed(2)},${hst},${total},"${String(r.notes||'').replace(/"/g,'""')}"\n`;
   });
-  const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'leos_receipts_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
   toast('CSV exported ✓');
 }
 
-// ── CLEAR DATA ──
-function clearAll() {
+// ── CLEAR ALL ──
+async function clearAll() {
   if (!confirm('Delete ALL receipts permanently? This cannot be undone.')) return;
-  receipts = [];
-  save();
-  toast('All data cleared');
-  buildSummary();
+  try {
+    const snap = await db.collection('receipts').get();
+    const batch = db.batch();
+    snap.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    toast('All data cleared');
+  } catch { toast('❌ Error clearing data'); }
 }
 
 // ── PWA INSTALL ──
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredInstall = e;
+  e.preventDefault(); deferredInstall = e;
   document.getElementById('installBanner').classList.add('show');
   document.getElementById('manualInstallBtn').style.display = 'block';
 });
-
 function triggerInstall() {
-  if (deferredInstall) {
-    deferredInstall.prompt();
-    deferredInstall.userChoice.then(() => {
-      deferredInstall = null;
-      dismissInstall();
-    });
-  }
+  if (deferredInstall) deferredInstall.prompt();
 }
-
-function dismissInstall() {
-  document.getElementById('installBanner').classList.remove('show');
-}
-
-window.addEventListener('appinstalled', () => {
-  dismissInstall();
-  toast('App installed! 🎉');
-});
+function dismissInstall() { document.getElementById('installBanner').classList.remove('show'); }
+window.addEventListener('appinstalled', () => { dismissInstall(); toast('App installed! 🎉'); });
 
 // ── SERVICE WORKER ──
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 
 // ── INIT ──
 document.getElementById('date').valueAsDate = new Date();
 buildCatGrid();
-initPin();
+startSync();
 </script>
 </body>
 </html>
