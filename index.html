@@ -520,7 +520,7 @@ async function compressImage(file) {
 }
 
 // ── ADD RECEIPT ──
-async function addReceipt() {
+function addReceipt() {
   const vendor = document.getElementById('vendor').value.trim();
   const amount = parseFloat(document.getElementById('amount').value);
   const date   = document.getElementById('date').value;
@@ -531,76 +531,67 @@ async function addReceipt() {
   if (!date)                  { toast('⚠️ Select a date'); return; }
   if (!selectedCat)           { toast('⚠️ Select a category'); return; }
 
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
+  const fileInput = document.getElementById('fileInput');
+  const photoFile = fileInput.files[0] || null;
+  const savedCat  = selectedCat;
 
+  // Reset form immediately — never block the UI waiting on network
+  document.getElementById('vendor').value = '';
+  document.getElementById('amount').value = '';
+  document.getElementById('notes').value  = '';
+  document.getElementById('date').valueAsDate = new Date();
+  document.getElementById('previewImg').classList.add('hidden');
+  document.getElementById('photoBtn').style.display = 'flex';
+  fileInput.value = '';
+  selectedCat = null;
+  buildCatGrid();
+  toast('Receipt saved ✓');
+
+  // All network work runs in background — UI is already ready for next receipt
+  doSave(vendor, amount, date, savedCat, notes, photoFile);
+}
+
+async function doSave(vendor, amount, date, cat, notes, photoFile) {
   try {
-    const fileInput = document.getElementById('fileInput');
-    const photoFile = fileInput.files[0] || null;
-
-    // Save receipt immediately with no image so form can reset right away
     const docRef = await db.collection('receipts').add({
-      vendor, amount, date, cat: selectedCat, notes,
-      imageUrl: null,
+      vendor, amount, date, cat, notes, imageUrl: null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-
-    // Reset form instantly — user can add next receipt now
-    document.getElementById('vendor').value = '';
-    document.getElementById('amount').value = '';
-    document.getElementById('notes').value  = '';
-    document.getElementById('date').valueAsDate = new Date();
-    document.getElementById('previewImg').classList.add('hidden');
-    document.getElementById('photoBtn').style.display = 'flex';
-    fileInput.value = '';
-    const savedCat = selectedCat;
-    selectedCat = null;
-    buildCatGrid();
-    btn.disabled = false;
-    btn.textContent = 'Save Receipt ✓';
-    toast('Receipt saved ✓');
-
-    // Upload photo in background — updates the receipt when done
-    if (photoFile) uploadPhoto(docRef.id, photoFile, savedCat, vendor, date);
-
+    if (photoFile) doUpload(docRef.id, photoFile, cat, vendor, date);
   } catch(e) {
-    console.error(e);
-    toast('❌ Save failed — check connection');
-    btn.disabled = false;
-    btn.textContent = 'Save Receipt ✓';
+    console.error('Save error:', e);
+    toast('⚠️ Receipt may not have synced — check log');
   }
 }
 
-async function uploadPhoto(docId, file, cat, vendor, date) {
+async function doUpload(docId, file, cat, vendor, date) {
   try {
     let blob;
     try { blob = await compressImage(file); } catch { blob = file; }
     const fd = new FormData();
     fd.append('file', blob);
     fd.append('upload_preset', CLOUDINARY_PRESET);
-    fd.append('folder', 'leos-receipts');
     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
     const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    if (!data.secure_url) throw new Error('No URL returned');
-    const imageUrl = data.secure_url;
+    if (!data.secure_url) throw new Error(data.error?.message || 'No URL returned');
 
-    // Update the receipt with the image URL
-    await db.collection('receipts').doc(docId).update({ imageUrl });
+    await db.collection('receipts').doc(docId).update({ imageUrl: data.secure_url });
 
-    // Fire-and-forget to Google Drive
     if (DRIVE_SCRIPT_URL) {
       const catNames = {
         gas:'Gas & Fuel', materials:'Materials & Parts', tools:'Tools & Equipment',
         vehicle:'Vehicle', subs:'Subscriptions', invoices:'Invoices Received',
         permits:'Permits & Fees', other:'Other'
       };
-      const params = new URLSearchParams({ url: imageUrl, category: catNames[cat] || 'Other', vendor, date });
-      fetch(`${DRIVE_SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
+      const params = new URLSearchParams({
+        url: data.secure_url, category: catNames[cat] || 'Other', vendor, date
+      });
+      // Image ping bypasses CORS on script.google.com redirects
+      const ping = new Image();
+      ping.src = `${DRIVE_SCRIPT_URL}?${params}`;
     }
   } catch(e) {
-    console.error('Photo upload failed:', e.message);
+    console.error('Upload error:', e.message);
   }
 }
 
