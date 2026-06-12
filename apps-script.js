@@ -13,6 +13,11 @@ function doGet(e) {
       writeIncomeRow(e.parameter);
       return ok();
     }
+    if (action === 'draw') {
+      writeDrawRow(e.parameter);
+      if (e.parameter.url) saveToDrive(e.parameter.url, "Owner's Draw", e.parameter.partner || "Owner's Draw", e.parameter.date || '');
+      return ok();
+    }
     if (e.parameter.url) saveToDrive(e.parameter.url, e.parameter.category || 'Other', e.parameter.vendor || '', e.parameter.date || '');
     return ok();
   } catch (err) {
@@ -21,7 +26,7 @@ function doGet(e) {
 }
 
 function getSheet(p, sheetName) {
-  var id = p.spreadsheetId || '1ExM-7GB74gDchC242iKJdGAVPEBNVcYB';
+  var id = p.spreadsheetId || '1s91mWhcAv-JnkmucXNKpVdhjEmICCpn_-EHkm9LKNB4';
   var ss = SpreadsheetApp.openById(id);
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) throw new Error('Tab "' + sheetName + '" not found in spreadsheet');
@@ -74,6 +79,24 @@ function writeIncomeRow(p) {
   ]);
 }
 
+function writeDrawRow(p) {
+  var sheet        = getSheet(p, "Owner's Draw");
+  var amountOut    = parseFloat(p.amountOut)    || 0;
+  var amountRepaid = parseFloat(p.amountRepaid) || 0;
+  var balance      = Math.round((amountOut - amountRepaid) * 100) / 100;
+  sheet.appendRow([
+    p.date          || '',
+    p.partner       || '',
+    p.drawType      || '',
+    p.desc          || '',
+    amountOut.toFixed(2),
+    amountRepaid.toFixed(2),
+    balance.toFixed(2),
+    p.paymentMethod || '',
+    p.notes         || ''
+  ]);
+}
+
 function saveToDrive(url, category, vendor, date) {
   var folders = DriveApp.getFoldersByName("Leo's Receipts");
   var parent  = folders.hasNext() ? folders.next() : DriveApp.createFolder("Leo's Receipts");
@@ -93,10 +116,12 @@ function json(d)   {
 }
 
 function testAccess() {
-  var ss = SpreadsheetApp.openById('1ExM-7GB74gDchC242iKJdGAVPEBNVcYB');
+  var ss = SpreadsheetApp.openById('1s91mWhcAv-JnkmucXNKpVdhjEmICCpn_-EHkm9LKNB4');
   Logger.log('Found: ' + ss.getName());
   var sheet = ss.getSheetByName('Expenses');
   Logger.log('Expenses tab: ' + (sheet ? 'YES' : 'NOT FOUND'));
   var sheet2 = ss.getSheetByName('Income');
   Logger.log('Income tab: ' + (sheet2 ? 'YES' : 'NOT FOUND'));
+  var sheet3 = ss.getSheetByName("Owner's Draw");
+  Logger.log("Owner's Draw tab: " + (sheet3 ? 'YES' : 'NOT FOUND'));
 }

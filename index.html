@@ -14,6 +14,7 @@
   :root {
     --blue: #1A5276; --blue-dark: #154360; --blue-light: #D6EAF8;
     --green: #1E8449; --green-light: #EAFAF1;
+    --purple: #8E44AD; --purple-light: #F5EEF8;
     --danger: #E74C3C; --text: #1a1a1a; --text-muted: #888;
     --border: #e0e0e0; --white: #fff; --radius: 12px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -101,6 +102,12 @@
   .btn-save:active { background: var(--blue-dark); transform: scale(0.98); }
   .btn-save.income-btn { background: var(--green); }
   .btn-save.income-btn:active { background: #196F3D; }
+  .btn-save.draw-btn { background: var(--purple); }
+  .btn-save.draw-btn:active { background: #7D3C98; }
+
+  /* DRAW PILL */
+  .draw-pill { grid-column: 1 / -1; border-color: var(--purple); color: var(--purple); }
+  .draw-pill.selected { background: var(--purple) !important; color: white; border-color: transparent; }
 
   /* FILTERS */
   .filters { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
@@ -345,6 +352,73 @@
         </div>
       </div>
 
+      <!-- OWNER'S DRAW FORM — shown after Draw selected -->
+      <div id="drawForm" class="hidden">
+        <label onclick="document.getElementById('drawFileInput').click()" style="cursor:pointer;display:block;">
+          <div class="photo-zone" id="drawPhotoBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <strong>Tap to take photo or choose file</strong>
+            <span style="font-size:12px;color:#999;">Optional — JPG or PNG</span>
+          </div>
+        </label>
+        <input type="file" id="drawFileInput" accept="image/*" capture="environment" onchange="previewDrawPhoto(this)">
+        <img id="drawPreviewImg" class="preview-img hidden" alt="Draw photo">
+
+        <div class="row2">
+          <div class="form-group">
+            <label class="field-label">Date</label>
+            <input type="date" id="drawDate">
+          </div>
+          <div class="form-group">
+            <label class="field-label">Partner</label>
+            <select id="drawPartner">
+              <option value="">Select partner...</option>
+              <option>Jacob</option>
+              <option>Doug</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Type</label>
+          <select id="drawType">
+            <option value="">Select type...</option>
+            <option>Personal Expense for Business</option>
+            <option>Cash Injection</option>
+            <option>Draw/Repayment to Partner</option>
+            <option>Partner Loan</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Description</label>
+          <input type="text" id="drawDesc" placeholder="e.g. Jacob personal use of company card" autocomplete="off">
+        </div>
+        <div class="row2">
+          <div class="form-group">
+            <label class="field-label">Amount Out ($)</label>
+            <input type="number" id="drawAmountOut" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+          </div>
+          <div class="form-group">
+            <label class="field-label">Amount Repaid ($)</label>
+            <input type="number" id="drawAmountRepaid" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Payment Method</label>
+          <select id="drawPaymentMethod">
+            <option value="">Select method...</option>
+            <option>Cash</option>
+            <option>e-Transfer</option>
+            <option>Credit Card</option>
+            <option>Debit Card</option>
+            <option>Cheque</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Notes (optional)</label>
+          <input type="text" id="drawNotes" placeholder="Additional details..." autocomplete="off">
+        </div>
+      </div>
+
       <button class="btn-save hidden" id="saveBtn" onclick="addReceipt()">Save ✓</button>
     </div>
   </div>
@@ -367,6 +441,11 @@
         <div class="sc-label">Total Income</div>
         <div class="sc-val" id="totalIncome" style="color:var(--green)">$0.00</div>
         <div class="sc-sub" id="incomeCount">0 invoices</div>
+      </div>
+      <div class="summary-card net" style="background:var(--purple-light);border:1px solid #D7BDE2;">
+        <div class="sc-label" style="color:var(--purple);">Owner's Draw</div>
+        <div class="sc-val" id="totalDraws" style="color:var(--purple);">$0.00</div>
+        <div class="sc-sub" id="drawSub">0 draws</div>
       </div>
       <div class="summary-card net">
         <div class="sc-label">Net Balance</div>
@@ -460,7 +539,7 @@ const CLOUDINARY_CLOUD  = 'duuuutrs2';
 const CLOUDINARY_PRESET = "Leo's Receipts";
 // Updated Apps Script handles Drive uploads + Sheets row writing
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQOI1EB5aLTm11bBypcODg-UYtblUH5nc0cTf8PZuJ3VN8u-vGff8BYXu_S7CQAkX9/exec';
-const SPREADSHEET_ID = '1q5fx_qkxmJ-u5bXV4h72a_KGlprPPI2XwuXjnQ67rjc';
+const SPREADSHEET_ID = '1s91mWhcAv-JnkmucXNKpVdhjEmICCpn_-EHkm9LKNB4';
 
 const CATS = [
   { id: 'gas',       label: 'Gas & Fuel',        icon: '⛽', color: '#E67E22', bg: '#FEF9E7' },
@@ -590,11 +669,23 @@ function buildCatGrid() {
     showIncomeForm();
   };
   grid.appendChild(inc);
+
+  // Owner's Draw — full-width purple pill
+  const drw = document.createElement('div');
+  drw.className = 'cat-pill draw-pill' + (selectedCat === 'draw' ? ' selected' : '');
+  drw.innerHTML = `<span class="icon">💜</span>Owner's Draw`;
+  drw.onclick = () => {
+    selectedCat = 'draw';
+    buildCatGrid();
+    showDrawForm();
+  };
+  grid.appendChild(drw);
 }
 
 function showExpenseForm() {
   document.getElementById('expenseForm').classList.remove('hidden');
   document.getElementById('incomeForm').classList.add('hidden');
+  document.getElementById('drawForm').classList.add('hidden');
   document.getElementById('saveBtn').classList.remove('hidden');
   document.getElementById('saveBtn').className = 'btn-save';
   document.getElementById('saveBtn').textContent = 'Save Receipt ✓';
@@ -604,6 +695,7 @@ function showExpenseForm() {
 function showIncomeForm() {
   document.getElementById('expenseForm').classList.add('hidden');
   document.getElementById('incomeForm').classList.remove('hidden');
+  document.getElementById('drawForm').classList.add('hidden');
   document.getElementById('saveBtn').classList.remove('hidden');
   document.getElementById('saveBtn').className = 'btn-save income-btn';
   document.getElementById('saveBtn').textContent = 'Save Invoice ✓';
@@ -613,6 +705,17 @@ function showIncomeForm() {
   document.getElementById('incInvoiceNum').value = 'INV-' + new Date().getFullYear() + '-' + String(n).padStart(3, '0');
   document.getElementById('incDate').valueAsDate = new Date();
   calcIncTotals();
+}
+
+function showDrawForm() {
+  document.getElementById('expenseForm').classList.add('hidden');
+  document.getElementById('incomeForm').classList.add('hidden');
+  document.getElementById('drawForm').classList.remove('hidden');
+  document.getElementById('saveBtn').classList.remove('hidden');
+  document.getElementById('saveBtn').className = 'btn-save draw-btn';
+  document.getElementById('saveBtn').textContent = "Save Draw ✓";
+  document.getElementById('formTitle').textContent = "Owner's Draw";
+  document.getElementById('drawDate').valueAsDate = new Date();
 }
 
 // ── INCOME TOTALS ──
@@ -651,6 +754,15 @@ function previewPhoto(input) {
   document.getElementById('photoBtn').style.display = 'none';
 }
 
+function previewDrawPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const img = document.getElementById('drawPreviewImg');
+  img.src = URL.createObjectURL(file);
+  img.classList.remove('hidden');
+  document.getElementById('drawPhotoBtn').style.display = 'none';
+}
+
 async function compressImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -681,6 +793,7 @@ async function compressImage(file) {
 // ── ADD RECEIPT (dispatcher) ──
 function addReceipt() {
   if (selectedCat === 'income') addIncomeEntry();
+  else if (selectedCat === 'draw') addDrawEntry();
   else addExpenseEntry();
 }
 
@@ -791,6 +904,62 @@ function addIncomeEntry() {
   });
 }
 
+// ── ADD OWNER'S DRAW ──
+function addDrawEntry() {
+  const date          = document.getElementById('drawDate').value;
+  const partner       = document.getElementById('drawPartner').value;
+  const drawType      = document.getElementById('drawType').value;
+  const desc          = document.getElementById('drawDesc').value.trim();
+  const amountOut     = parseFloat(document.getElementById('drawAmountOut').value)    || 0;
+  const amountRepaid  = parseFloat(document.getElementById('drawAmountRepaid').value) || 0;
+  const paymentMethod = document.getElementById('drawPaymentMethod').value;
+  const notes         = document.getElementById('drawNotes').value.trim();
+  const photoFile     = document.getElementById('drawFileInput').files[0] || null;
+
+  if (!date)    { toast('⚠️ Select a date'); return; }
+  if (!partner) { toast('⚠️ Select a partner'); return; }
+  if (!drawType){ toast('⚠️ Select a draw type'); return; }
+  if (!desc)    { toast('⚠️ Enter a description'); return; }
+  if (amountOut <= 0 && amountRepaid <= 0) { toast('⚠️ Enter an amount'); return; }
+
+  // Reset form immediately
+  document.getElementById('drawPartner').value = '';
+  document.getElementById('drawType').value = '';
+  document.getElementById('drawDesc').value = '';
+  document.getElementById('drawAmountOut').value = '';
+  document.getElementById('drawAmountRepaid').value = '';
+  document.getElementById('drawPaymentMethod').value = '';
+  document.getElementById('drawNotes').value = '';
+  document.getElementById('drawPreviewImg').classList.add('hidden');
+  document.getElementById('drawPhotoBtn').style.display = 'flex';
+  document.getElementById('drawFileInput').value = '';
+  document.getElementById('drawDate').valueAsDate = new Date();
+  selectedCat = null;
+  buildCatGrid();
+  document.getElementById('drawForm').classList.add('hidden');
+  document.getElementById('saveBtn').classList.add('hidden');
+  document.getElementById('formTitle').textContent = 'New Entry';
+  toast("Owner's Draw saved ✓");
+
+  // Write to Firestore
+  const docRef = db.collection('receipts').doc();
+  docRef.set({
+    type: 'draw', date, partner, drawType, desc, amountOut, amountRepaid,
+    paymentMethod, notes, imageUrl: null, sheetsSync: false,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(e => console.error('Firestore draw write error:', e));
+
+  // Photo upload to Cloudinary + Drive (background)
+  if (photoFile) doDrawUpload(docRef.id, photoFile, partner, date);
+
+  // Sheets sync (background)
+  doDrawSync(docRef.id, {
+    date, partner, drawType, desc,
+    amountOut: String(amountOut), amountRepaid: String(amountRepaid),
+    paymentMethod, notes
+  });
+}
+
 // ── CLOUDINARY + DRIVE UPLOAD ──
 async function doUpload(docId, file, cat, vendor, date) {
   let imageUrl = null;
@@ -844,6 +1013,51 @@ async function doSheetsSync(docId, type, data) {
   }
 }
 
+// ── DRAW UPLOAD (Cloudinary + Drive) ──
+async function doDrawUpload(docId, file, partner, date) {
+  let imageUrl = null;
+  try {
+    let blob;
+    try { blob = await compressImage(file); } catch { blob = file; }
+    const fd = new FormData();
+    fd.append('file', blob);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.secure_url) throw new Error(data.error?.message || 'No URL returned');
+    imageUrl = data.secure_url;
+    db.collection('receipts').doc(docId).update({ imageUrl }).catch(e => console.error('imageUrl update error:', e));
+  } catch(e) {
+    console.error('Cloudinary error:', e.message);
+  }
+  if (SCRIPT_URL && imageUrl) {
+    const params = new URLSearchParams({
+      action: 'drive',
+      url: imageUrl, category: "Owner's Draw", vendor: partner || "Owner's Draw", date
+    });
+    fetch(`${SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
+  }
+}
+
+// ── DRAW SHEETS SYNC ──
+async function doDrawSync(docId, data) {
+  if (!SCRIPT_URL) return;
+  try {
+    const params = new URLSearchParams({ action: 'draw', spreadsheetId: SPREADSHEET_ID, ...data });
+    const res  = await fetch(`${SCRIPT_URL}?${params}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (json.ok) {
+      db.collection('receipts').doc(docId).update({ sheetsSync: true }).catch(() => {});
+      console.log('[Sheets] synced draw', docId);
+    } else {
+      throw new Error(json.error || 'Script returned ok:false');
+    }
+  } catch(e) {
+    console.error('[Sheets] draw sync failed:', e.message);
+  }
+}
+
 // ── LOG ──
 function buildFilters() {
   const el = document.getElementById('filters');
@@ -861,6 +1075,16 @@ function buildFilters() {
     b.className = 'filter-btn' + (filterCat === 'income' ? ' active' : '');
     b.textContent = `💰 Income (${incCount})`;
     b.onclick = () => { filterCat = 'income'; buildFilters(); buildList(); };
+    el.appendChild(b);
+  }
+
+  const drawCount = receipts.filter(r => r.type === 'draw').length;
+  if (drawCount) {
+    const b = document.createElement('button');
+    b.className = 'filter-btn' + (filterCat === 'draw' ? ' active' : '');
+    b.style.cssText = filterCat === 'draw' ? 'background:var(--purple);color:white;border-color:var(--purple)' : 'border-color:var(--purple);color:var(--purple)';
+    b.textContent = `💜 Owner's Draw (${drawCount})`;
+    b.onclick = () => { filterCat = 'draw'; buildFilters(); buildList(); };
     el.appendChild(b);
   }
 
@@ -885,7 +1109,9 @@ function buildList() {
     ? receipts
     : filterCat === 'income'
       ? receipts.filter(r => r.type === 'income')
-      : receipts.filter(r => r.cat === filterCat);
+      : filterCat === 'draw'
+        ? receipts.filter(r => r.type === 'draw')
+        : receipts.filter(r => r.cat === filterCat);
 
   if (!filtered.length) {
     el.innerHTML = `<div class="empty-state"><div class="big">🧾</div><p>No entries yet.<br>Tap <strong>+ Add</strong> to log your first one.</p></div>`;
@@ -898,7 +1124,19 @@ function buildList() {
     const d = document.createElement('div');
     d.className = 'receipt-card';
 
-    if (r.type === 'income') {
+    if (r.type === 'draw') {
+      d.innerHTML = `
+        <div class="receipt-dot" style="background:var(--purple-light)">💜</div>
+        <div class="receipt-info">
+          <div class="receipt-vendor">${esc(r.partner || 'Unknown')} — ${esc(r.drawType || 'Draw')}</div>
+          <div class="receipt-meta">Owner's Draw · ${fmtDate(r.date)}${r.desc ? ' · ' + esc(r.desc) : ''}${r.imageUrl ? ' · 📎' : ''}</div>
+        </div>
+        <div class="receipt-right">
+          <div class="receipt-amount" style="color:var(--purple)">-$${Number(r.amountOut || 0).toFixed(2)}</div>
+          ${syncTitle ? `<div class="sync-dot ${syncClass}" title="${syncTitle}"></div>` : ''}
+        </div>
+      `;
+    } else if (r.type === 'income') {
       d.innerHTML = `
         <div class="receipt-dot" style="background:#EAFAF1">💰</div>
         <div class="receipt-info">
@@ -933,6 +1171,7 @@ function buildList() {
 function openModal(r) {
   currentReceipt = r;
   if (r.type === 'income') openIncomeModal(r);
+  else if (r.type === 'draw') openDrawModal(r);
   else openExpenseModal(r);
 }
 
@@ -990,6 +1229,29 @@ function openIncomeModal(r) {
   document.getElementById('receiptModal').classList.remove('hidden');
 }
 
+function openDrawModal(r) {
+  const syncBadge = r.sheetsSync === true ? '✅ Synced' : r.sheetsSync === false ? '⚠️ Not synced' : '';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-icon" style="background:var(--purple-light)">💜</div>
+      <div>
+        <div class="modal-vendor">${esc(r.partner || 'Unknown')} — Owner's Draw</div>
+        <div class="modal-cat-label">${esc(r.drawType || '')} · ${fmtDate(r.date)}</div>
+      </div>
+    </div>
+    <div class="modal-amount" style="color:var(--purple)">$${Number(r.amountOut || 0).toFixed(2)} <span>amount out</span></div>
+    ${r.imageUrl ? `<img class="modal-img" src="${esc(r.imageUrl)}" onclick="openFullImg()" alt="Draw photo">` : ''}
+    ${r.desc ? `<div class="modal-row"><span class="modal-row-label">Description</span><span class="modal-row-val">${esc(r.desc)}</span></div>` : ''}
+    ${Number(r.amountRepaid || 0) > 0 ? `<div class="modal-row"><span class="modal-row-label">Amount Repaid</span><span class="modal-row-val">$${Number(r.amountRepaid).toFixed(2)}</span></div>` : ''}
+    <div class="modal-row"><span class="modal-row-label">Net Draw</span><span class="modal-row-val" style="color:var(--purple)">$${(Number(r.amountOut||0) - Number(r.amountRepaid||0)).toFixed(2)}</span></div>
+    ${r.paymentMethod ? `<div class="modal-row"><span class="modal-row-label">Payment Method</span><span class="modal-row-val">${esc(r.paymentMethod)}</span></div>` : ''}
+    ${r.notes ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-val">${esc(r.notes)}</span></div>` : ''}
+    ${syncBadge ? `<div class="modal-row"><span class="modal-row-label">Sheets sync</span><span class="modal-row-val">${syncBadge}</span></div>` : ''}
+    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Draw</button>
+  `;
+  document.getElementById('receiptModal').classList.remove('hidden');
+}
+
 function handleOverlayClick(e) {
   if (e.target === document.getElementById('receiptModal')) closeModal();
 }
@@ -1020,18 +1282,25 @@ function fmtDate(s) {
 
 // ── SUMMARY ──
 function buildSummary() {
-  const expenses = receipts.filter(r => r.type !== 'income');
+  const expenses = receipts.filter(r => r.type !== 'income' && r.type !== 'draw');
   const incomes  = receipts.filter(r => r.type === 'income');
+  const draws    = receipts.filter(r => r.type === 'draw');
 
-  const totalExp = expenses.reduce((s, r) => s + Number(r.amount || 0), 0);
-  const totalInc = incomes.reduce((s, r) => s + Number(r.totalInvoiced || r.amount || 0), 0);
-  const net      = totalInc - totalExp;
+  const totalExp        = expenses.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalInc        = incomes.reduce((s, r) => s + Number(r.totalInvoiced || r.amount || 0), 0);
+  const totalDrawOut    = draws.reduce((s, r) => s + Number(r.amountOut || 0), 0);
+  const totalDrawRepaid = draws.reduce((s, r) => s + Number(r.amountRepaid || 0), 0);
+  const net             = totalInc - totalExp - totalDrawOut + totalDrawRepaid;
 
   document.getElementById('totalExpenses').textContent = '$' + totalExp.toFixed(2);
   document.getElementById('expenseCount').textContent  = expenses.length + ' receipt' + (expenses.length !== 1 ? 's' : '');
 
   document.getElementById('totalIncome').textContent = '$' + totalInc.toFixed(2);
   document.getElementById('incomeCount').textContent = incomes.length + ' invoice' + (incomes.length !== 1 ? 's' : '');
+
+  document.getElementById('totalDraws').textContent = '$' + totalDrawOut.toFixed(2);
+  document.getElementById('drawSub').textContent = draws.length + ' draw' + (draws.length !== 1 ? 's' : '') +
+    (totalDrawRepaid > 0 ? ` · $${totalDrawRepaid.toFixed(2)} repaid` : '');
 
   const netEl  = document.getElementById('netBalance');
   const netSub = document.getElementById('netSub');
@@ -1067,9 +1336,14 @@ function buildSummary() {
 // ── EXPORT ──
 function exportCSV() {
   if (!receipts.length) { toast('No entries to export'); return; }
-  let csv = 'Type,Date,Vendor/Client,Category/Job,Amount,HST,Total,Notes\n';
+  let csv = 'Type,Date,Vendor/Client,Category/Job,Amount Out,Amount Repaid/HST,Total/Net,Notes\n';
   receipts.forEach(r => {
-    if (r.type === 'income') {
+    if (r.type === 'draw') {
+      const out     = Number(r.amountOut || 0).toFixed(2);
+      const repaid  = Number(r.amountRepaid || 0).toFixed(2);
+      const net     = (Number(r.amountOut || 0) - Number(r.amountRepaid || 0)).toFixed(2);
+      csv += `Draw,${r.date},"${String(r.partner||'').replace(/"/g,'""')}","${String(r.drawType||'').replace(/"/g,'""')}",${out},${repaid},${net},"${String(r.notes||'').replace(/"/g,'""')}"\n`;
+    } else if (r.type === 'income') {
       const hst   = Number(r.hst || 0).toFixed(2);
       const total = Number(r.totalInvoiced || 0).toFixed(2);
       csv += `Income,${r.date},"${String(r.clientName||'').replace(/"/g,'""')}","${String(r.jobType||'').replace(/"/g,'""')}",${Number(r.amount||0).toFixed(2)},${hst},${total},"${String(r.notes||'').replace(/"/g,'""')}"\n`;
