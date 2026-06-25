@@ -185,6 +185,19 @@
   .modal-row-val { font-weight: 500; text-align: right; max-width: 60%; }
   .modal-del { width: 100%; padding: 13px; margin-top: 16px; background: none; border: 1.5px solid var(--danger); border-radius: 10px; color: var(--danger); font-size: 15px; font-weight: 600; cursor: pointer; }
   .modal-del:active { background: #FDEDEC; }
+  .modal-del-secondary {
+    width: 100%;
+    padding: 13px;
+    margin-top: 16px;
+    background: none;
+    border: 1.5px solid var(--blue);
+    border-radius: 10px;
+    color: var(--blue);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-del-secondary:active { background: var(--blue-light); }
 
   /* INSTALL BANNER */
   #installBanner { display: none; position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 14px; right: 14px; background: var(--blue); color: white; border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); z-index: 500; flex-direction: row; align-items: center; gap: 12px; }
@@ -1196,7 +1209,8 @@ function openExpenseModal(r) {
     ${r.receiptNum ? `<div class="modal-row"><span class="modal-row-label">Receipt #</span><span class="modal-row-val">${esc(r.receiptNum)}</span></div>` : ''}
     ${r.notes ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-val">${esc(r.notes)}</span></div>` : ''}
     ${syncBadge ? `<div class="modal-row"><span class="modal-row-label">Sheets sync</span><span class="modal-row-val">${syncBadge}</span></div>` : ''}
-    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Receipt</button>
+    ${r.imageUrl ? `<button class="modal-del-secondary" onclick="removePhotoOnly()">Remove Photo Only</button>` : ''}
+    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Record</button>
   `;
   document.getElementById('receiptModal').classList.remove('hidden');
 }
@@ -1224,7 +1238,7 @@ function openIncomeModal(r) {
     <div class="modal-row"><span class="modal-row-label">Balance Owing</span><span class="modal-row-val">$${Number(r.balance||0).toFixed(2)}</span></div>
     ${r.notes ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-val">${esc(r.notes)}</span></div>` : ''}
     ${syncBadge ? `<div class="modal-row"><span class="modal-row-label">Sheets sync</span><span class="modal-row-val">${syncBadge}</span></div>` : ''}
-    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Invoice</button>
+    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Record</button>
   `;
   document.getElementById('receiptModal').classList.remove('hidden');
 }
@@ -1247,7 +1261,8 @@ function openDrawModal(r) {
     ${r.paymentMethod ? `<div class="modal-row"><span class="modal-row-label">Payment Method</span><span class="modal-row-val">${esc(r.paymentMethod)}</span></div>` : ''}
     ${r.notes ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-val">${esc(r.notes)}</span></div>` : ''}
     ${syncBadge ? `<div class="modal-row"><span class="modal-row-label">Sheets sync</span><span class="modal-row-val">${syncBadge}</span></div>` : ''}
-    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Draw</button>
+    ${r.imageUrl ? `<button class="modal-del-secondary" onclick="removePhotoOnly()">Remove Photo Only</button>` : ''}
+    <button class="modal-del" onclick="deleteCurrentReceipt()">Delete Record</button>
   `;
   document.getElementById('receiptModal').classList.remove('hidden');
 }
@@ -1263,13 +1278,26 @@ function openFullImg() {
   if (currentReceipt && currentReceipt.imageUrl) window.open(currentReceipt.imageUrl, '_blank');
 }
 
+async function removePhotoOnly() {
+  if (!currentReceipt || !currentReceipt.imageUrl) return;
+  if (!confirm('Remove the photo from this entry? The expense record will be kept.')) return;
+  const r = currentReceipt;
+  try {
+    await db.collection('receipts').doc(r._id).update({ imageUrl: null });
+    toast('Photo removed — record kept ✓');
+    closeModal();
+  } catch {
+    toast('❌ Failed to remove photo');
+  }
+}
+
 async function deleteCurrentReceipt() {
-  if (!currentReceipt || !confirm('Delete this entry?')) return;
+  if (!currentReceipt || !confirm('Delete this entire record from the app? (Your Google Sheet entry is always kept.)')) return;
   const r = currentReceipt;
   closeModal();
   try {
     await db.collection('receipts').doc(r._id).delete();
-    toast('Entry deleted');
+    toast('Record deleted from app');
   } catch { toast('❌ Delete failed'); }
 }
 
