@@ -260,6 +260,7 @@
     <div class="tab active" id="tab-btn-add" onclick="switchTab('add')">+ Add</div>
     <div class="tab" id="tab-btn-log" onclick="switchTab('log')">Log</div>
     <div class="tab" id="tab-btn-summary" onclick="switchTab('summary')">Summary</div>
+    <div class="tab" id="tab-btn-customers" onclick="switchTab('customers')">Customers</div>
     <div class="tab" id="tab-btn-settings" onclick="switchTab('settings')">Settings</div>
   </div>
 
@@ -289,6 +290,11 @@
         <div class="form-group">
           <label class="field-label">Vendor / store name</label>
           <input type="text" id="vendor" placeholder="e.g. Home Depot, Esso, Amazon" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Customer Name (optional)</label>
+          <input type="text" id="expClientName" placeholder="e.g. Jane Smith" autocomplete="off" list="customerSuggestions">
+          <datalist id="customerSuggestions"></datalist>
         </div>
         <div class="row2">
           <div class="form-group">
@@ -331,7 +337,7 @@
         </div>
         <div class="form-group">
           <label class="field-label">Client Name</label>
-          <input type="text" id="incClientName" placeholder="e.g. John Smith" autocomplete="off">
+          <input type="text" id="incClientName" placeholder="e.g. John Smith" autocomplete="off" list="customerSuggestions">
         </div>
         <div class="form-group">
           <label class="field-label">Job Type</label>
@@ -474,6 +480,8 @@
   </div>
 
   <!-- SETTINGS -->
+  <div id="tab-customers" class="scroll-content hidden"></div>
+
   <div id="tab-settings" class="scroll-content hidden">
     <div class="card">
       <h2>Data</h2>
@@ -573,6 +581,8 @@ const CAT_NAMES = {
 
 // ── STATE ──
 let receipts    = [];
+let customers   = []; // read-only mirror of Leo's Dispatch's customers collection
+let activeCustDetailId = null;
 let selectedCat = null;
 let filterCat   = 'all';
 let pinEntry    = '';
@@ -638,12 +648,14 @@ function lockApp() {
 // ── TABS ──
 function switchTab(t) {
   currentTab = t;
-  ['add','log','summary','settings'].forEach(id => {
+  activeCustDetailId = null;
+  ['add','log','summary','customers','settings'].forEach(id => {
     document.getElementById('tab-' + id).classList.toggle('hidden', id !== t);
     document.getElementById('tab-btn-' + id).classList.toggle('active', id === t);
   });
   if (t === 'log') { buildFilters(); buildList(); }
   if (t === 'summary') buildSummary();
+  if (t === 'customers') buildCustomersList();
 }
 
 // ── FIRESTORE SYNC ──
@@ -654,6 +666,75 @@ function startSync() {
     if (currentTab === 'log') { buildFilters(); buildList(); }
     if (currentTab === 'summary') buildSummary();
   }, () => toast('⚠️ Sync error — check connection'));
+}
+
+// Read-only mirror of the shared customers collection (owned/edited by Leo's Dispatch).
+function startCustomersSync() {
+  db.collection('customers').onSnapshot(snap => {
+    customers = snap.docs.map(doc => ({ _id: doc.id, ...doc.data() })).sort((a,b) => (a.name||'').localeCompare(b.name||''));
+    updateCustomerDatalist();
+    if (currentTab === 'customers') buildCustomersList();
+  }, () => {});
+}
+function updateCustomerDatalist() {
+  const dl = document.getElementById('customerSuggestions');
+  if (dl) dl.innerHTML = customers.map(c => `<option value="${esc(c.name)}">`).join('');
+}
+
+// ── CUSTOMERS (read-only) ──
+function buildCustomersList() {
+  const el = document.getElementById('tab-customers');
+  if (activeCustDetailId) { el.innerHTML = customerDetailHTML(activeCustDetailId); return; }
+  el.innerHTML = `
+    <div class="card">
+      <h2>Customers</h2>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Synced from Leo's Dispatch — edit profiles there.</div>
+      ${customers.length === 0 ? `<div style="font-size:13px;color:var(--text-muted);">No customers yet.</div>` : customers.map(c => `
+        <div class="list-item" onclick="openCustDetail('${c._id}')" style="cursor:pointer;padding:12px 0;border-bottom:1px solid var(--border);">
+          <div style="font-weight:600;font-size:14px;">${esc(c.name)}</div>
+          <div style="font-size:12px;color:var(--text-muted);">${esc(c.address||'')}</div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+function openCustDetail(id) {
+  activeCustDetailId = id;
+  buildCustomersList();
+}
+function backToCustList() {
+  activeCustDetailId = null;
+  buildCustomersList();
+}
+function customerDetailHTML(id) {
+  const c = customers.find(x => x._id === id);
+  if (!c) return `<div class="card">Not found</div>`;
+  const p = c.property || {};
+  const custExpenses = receipts.filter(r => r.type !== 'income' && r.type !== 'draw' && (r.clientName||'').trim().toLowerCase() === (c.name||'').trim().toLowerCase());
+  const custIncome = receipts.filter(r => r.type === 'income' && (r.clientName||'').trim().toLowerCase() === (c.name||'').trim().toLowerCase());
+  return `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <button onclick="backToCustList()" style="background:none;border:none;font-size:20px;color:var(--blue);cursor:pointer;">←</button>
+      <h2 style="margin:0;">${esc(c.name)}</h2>
+    </div>
+    <div class="card">
+      <h2>Contact</h2>
+      <div style="font-size:13px;color:#555;">${esc(c.address||'')}</div>
+      <div style="font-size:13px;color:#555;">${esc(c.phone||'')} ${c.email ? '· ' + esc(c.email) : ''}</div>
+      ${c.notes ? `<div style="font-size:13px;color:#555;margin-top:6px;">${esc(c.notes)}</div>` : ''}
+    </div>
+    <div class="card">
+      <h2>Property Profile</h2>
+      <div style="font-size:13px;color:#555;">Water line: ${esc(p.waterLineType||'—')} · Pipe: ${esc(p.pipeType||'—')}</div>
+      <div style="font-size:13px;color:#555;">Water heater: ${esc(p.waterHeaterType||'—')} ${p.waterHeaterAge ? `(${p.waterHeaterAge} yrs)` : ''}</div>
+      <div style="font-size:13px;color:#555;">Irrigation zones: ${esc(p.irrigationZones||'—')} · Controller: ${esc(p.irrigationControllerType||'—')}</div>
+      ${p.watchList ? `<div style="font-size:13px;color:var(--danger);margin-top:6px;">⚠️ ${esc(p.watchList)}</div>` : ''}
+    </div>
+    ${(custExpenses.length || custIncome.length) ? `<div class="card">
+      <h2>Receipts for this Customer</h2>
+      ${custExpenses.map(r => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);"><span>${esc(r.vendor)} — ${fmtDate(r.date)}</span><span>$${Number(r.amount||0).toFixed(2)}</span></div>`).join('')}
+      ${custIncome.map(r => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);color:var(--green);"><span>Invoice ${esc(r.invoiceNum||'')} — ${fmtDate(r.date)}</span><span>$${Number(r.totalInvoiced||0).toFixed(2)}</span></div>`).join('')}
+    </div>` : ''}
+  `;
 }
 
 // ── CATEGORY GRID ──
@@ -813,6 +894,7 @@ function addReceipt() {
 // ── ADD EXPENSE ──
 function addExpenseEntry() {
   const vendor        = document.getElementById('vendor').value.trim();
+  const clientName    = document.getElementById('expClientName').value.trim();
   const amount        = parseFloat(document.getElementById('amount').value);
   const date          = document.getElementById('date').value;
   const notes         = document.getElementById('notes').value.trim();
@@ -830,6 +912,7 @@ function addExpenseEntry() {
 
   // Reset form immediately
   document.getElementById('vendor').value = '';
+  document.getElementById('expClientName').value = '';
   document.getElementById('amount').value = '';
   document.getElementById('notes').value  = '';
   document.getElementById('paymentMethod').value = '';
@@ -847,7 +930,7 @@ function addExpenseEntry() {
   // Write to Firestore (fire-and-forget)
   const docRef = db.collection('receipts').doc();
   docRef.set({
-    type: 'expense', vendor, amount, date, cat: savedCat, notes,
+    type: 'expense', vendor, clientName, amount, date, cat: savedCat, notes,
     paymentMethod, receiptNum, imageUrl: null, sheetsSync: false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   }).catch(e => console.error('Firestore write error:', e));
@@ -1205,6 +1288,7 @@ function openExpenseModal(r) {
     ${r.imageUrl ? `<img class="modal-img" src="${esc(r.imageUrl)}" onclick="openFullImg()" alt="Receipt photo">` : ''}
     <div class="modal-row"><span class="modal-row-label">HST (13%)</span><span class="modal-row-val">$${hst}</span></div>
     <div class="modal-row"><span class="modal-row-label">Total with HST</span><span class="modal-row-val">$${total}</span></div>
+    ${r.clientName ? `<div class="modal-row"><span class="modal-row-label">Customer</span><span class="modal-row-val">${esc(r.clientName)}</span></div>` : ''}
     ${r.paymentMethod ? `<div class="modal-row"><span class="modal-row-label">Payment Method</span><span class="modal-row-val">${esc(r.paymentMethod)}</span></div>` : ''}
     ${r.receiptNum ? `<div class="modal-row"><span class="modal-row-label">Receipt #</span><span class="modal-row-val">${esc(r.receiptNum)}</span></div>` : ''}
     ${r.notes ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-val">${esc(r.notes)}</span></div>` : ''}
@@ -1418,6 +1502,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').ca
 document.getElementById('date').valueAsDate = new Date();
 buildCatGrid();
 startSync();
+startCustomersSync();
 </script>
 </body>
 </html>
