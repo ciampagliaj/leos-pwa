@@ -18,6 +18,10 @@ function doGet(e) {
       if (e.parameter.url) saveToDrive(e.parameter.url, "Owner's Draw", e.parameter.partner || "Owner's Draw", e.parameter.date || '');
       return ok();
     }
+    if (action === 'mileage') {
+      writeMileageRow(e.parameter);
+      return ok();
+    }
     if (e.parameter.url) saveToDrive(e.parameter.url, e.parameter.category || 'Other', e.parameter.vendor || '', e.parameter.date || '');
     return ok();
   } catch (err) {
@@ -94,6 +98,20 @@ function writeDrawRow(p) {
     balance.toFixed(2),
     p.paymentMethod || '',
     p.notes         || ''
+  ]);
+}
+
+function writeMileageRow(p) {
+  var sheet = getSheet(p, 'Mileage Log');
+  sheet.appendRow([
+    p.date      || '',
+    p.driver    || '',
+    p.from      || '',
+    p.to        || '',
+    parseFloat(p.km) || 0,
+    p.purpose   || '',
+    p.jobNum    || '',
+    new Date().toISOString()
   ]);
 }
 
