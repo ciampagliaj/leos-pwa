@@ -29,6 +29,62 @@ function doGet(e) {
   }
 }
 
+// ── LEO'S DISPATCH — quote Drive export + email (POST, JSON body) ──
+function doPost(e) {
+  try {
+    var body = JSON.parse(e.postData.contents);
+    if (body.action === 'exportQuote') {
+      var url = exportQuoteDoc(body);
+      return json({ ok: true, url: url });
+    }
+    if (body.action === 'sendEmail') {
+      sendDocEmail(body);
+      return ok();
+    }
+    return fail('Unknown action: ' + body.action);
+  } catch (err) {
+    return fail(err.message);
+  }
+}
+
+function getOrCreateFolder(name) {
+  var folders = DriveApp.getFoldersByName(name);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(name);
+}
+
+function exportQuoteDoc(body) {
+  var folder = getOrCreateFolder('Quotes');
+  var title = 'Quote - ' + (body.customerName || 'Unknown') + ' - ' + (body.date || '');
+  var doc = DocumentApp.create(title);
+  var docBody = doc.getBody();
+  docBody.appendParagraph("Leo's Plumbing and Irrigation").setHeading(DocumentApp.ParagraphHeading.TITLE);
+  docBody.appendParagraph('Quote for: ' + (body.customerName || ''));
+  docBody.appendParagraph('Date: ' + (body.date || ''));
+  docBody.appendParagraph('');
+  (body.lines || []).forEach(function (l) {
+    docBody.appendParagraph(l.label + '  —  ' + l.qtyLabel + '  —  $' + l.total);
+  });
+  if (parseFloat(body.serviceCallFee) > 0) {
+    docBody.appendParagraph('Drain Cleaning Call Fee  —  $' + body.serviceCallFee);
+  }
+  docBody.appendParagraph('');
+  docBody.appendParagraph('Subtotal: $' + body.subtotal);
+  docBody.appendParagraph('HST (13%): $' + body.hst);
+  docBody.appendParagraph('Total: $' + body.total);
+  doc.saveAndClose();
+
+  var file = DriveApp.getFileById(doc.getId());
+  folder.addFile(file);
+  DriveApp.getRootFolder().removeFile(file); // Apps Script drops new Docs in My Drive root by default
+  return file.getUrl();
+}
+
+function sendDocEmail(body) {
+  var options = { htmlBody: body.htmlBody, name: "Leo's Plumbing and Irrigation" };
+  if (body.fromAlias) options.from = body.fromAlias; // must already be a verified "Send mail as" alias
+  GmailApp.sendEmail(body.to, body.subject, 'Please view this email in an HTML-capable client.', options);
+}
+
 function getSheet(p, sheetName) {
   var id = p.spreadsheetId || '1s91mWhcAv-JnkmucXNKpVdhjEmICCpn_-EHkm9LKNB4';
   var ss = SpreadsheetApp.openById(id);
