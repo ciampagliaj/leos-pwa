@@ -1,4 +1,4 @@
-const CACHE = 'leos-receipts-v9';
+const CACHE = 'leos-receipts-v10';
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -22,8 +22,24 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Network-first for navigations/HTML so updates show up immediately; cache is just an offline fallback.
 self.addEventListener('fetch', e => {
+  const isHTML = e.request.mode === 'navigate' || e.request.headers.get('accept')?.includes('text/html');
+  if (isHTML) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const resClone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, resClone));
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+      const resClone = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, resClone));
+      return res;
+    }))
   );
 });
