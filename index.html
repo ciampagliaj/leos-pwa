@@ -399,13 +399,31 @@
         </div>
         <div class="form-group">
           <label class="field-label">Type</label>
-          <select id="drawType">
+          <select id="drawType" onchange="toggleDrawExpenseFields()">
             <option value="">Select type...</option>
             <option>Personal Expense for Business</option>
             <option>Cash Injection</option>
             <option>Draw/Repayment to Partner</option>
             <option>Partner Loan</option>
           </select>
+        </div>
+        <div id="drawExpenseFields" class="hidden">
+          <div style="font-size:12px;color:#888;margin-bottom:10px;">e.g. gas or materials paid on a personal card — tracked here so it's not lost, but kept separate from the business Expenses.</div>
+          <div class="form-group">
+            <label class="field-label">Category</label>
+            <select id="drawCategory">
+              <option value="">Select category...</option>
+              <option value="gas">Gas &amp; Fuel</option>
+              <option value="materials">Materials &amp; Parts</option>
+              <option value="tools">Tools &amp; Equipment</option>
+              <option value="vehicle">Vehicle</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Vendor / store name</label>
+            <input type="text" id="drawVendor" placeholder="e.g. Home Depot, Esso" autocomplete="off">
+          </div>
         </div>
         <div class="form-group">
           <label class="field-label">Description</label>
@@ -1001,10 +1019,17 @@ function addIncomeEntry() {
 }
 
 // ── ADD OWNER'S DRAW ──
+function toggleDrawExpenseFields() {
+  const isExpenseDraw = document.getElementById('drawType').value === 'Personal Expense for Business';
+  document.getElementById('drawExpenseFields').classList.toggle('hidden', !isExpenseDraw);
+}
 function addDrawEntry() {
   const date          = document.getElementById('drawDate').value;
   const partner       = document.getElementById('drawPartner').value;
   const drawType      = document.getElementById('drawType').value;
+  const isExpenseDraw = drawType === 'Personal Expense for Business';
+  const category      = isExpenseDraw ? document.getElementById('drawCategory').value : '';
+  const vendor         = isExpenseDraw ? document.getElementById('drawVendor').value.trim() : '';
   const desc          = document.getElementById('drawDesc').value.trim();
   const amountOut     = parseFloat(document.getElementById('drawAmountOut').value)    || 0;
   const amountRepaid  = parseFloat(document.getElementById('drawAmountRepaid').value) || 0;
@@ -1015,12 +1040,16 @@ function addDrawEntry() {
   if (!date)    { toast('⚠️ Select a date'); return; }
   if (!partner) { toast('⚠️ Select a partner'); return; }
   if (!drawType){ toast('⚠️ Select a draw type'); return; }
+  if (isExpenseDraw && !vendor) { toast('⚠️ Enter a vendor / store name'); return; }
   if (!desc)    { toast('⚠️ Enter a description'); return; }
   if (amountOut <= 0 && amountRepaid <= 0) { toast('⚠️ Enter an amount'); return; }
 
   // Reset form immediately
   document.getElementById('drawPartner').value = '';
   document.getElementById('drawType').value = '';
+  document.getElementById('drawCategory').value = '';
+  document.getElementById('drawVendor').value = '';
+  toggleDrawExpenseFields();
   document.getElementById('drawDesc').value = '';
   document.getElementById('drawAmountOut').value = '';
   document.getElementById('drawAmountRepaid').value = '';
@@ -1040,17 +1069,18 @@ function addDrawEntry() {
   // Write to Firestore
   const docRef = db.collection('receipts').doc();
   docRef.set({
-    type: 'draw', date, partner, drawType, desc, amountOut, amountRepaid,
+    type: 'draw', date, partner, drawType, category, vendor, desc, amountOut, amountRepaid,
     paymentMethod, notes, imageUrl: null, sheetsSync: false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   }).catch(e => console.error('Firestore draw write error:', e));
 
-  // Photo upload to Cloudinary + Drive (background)
-  if (photoFile) doDrawUpload(docRef.id, photoFile, partner, date);
+  // Photo upload to Cloudinary + Drive (background) — file under the material category when given, else "Owner's Draw"
+  if (photoFile) doDrawUpload(docRef.id, photoFile, partner, date, category ? (CAT_NAMES[category] || category) : "Owner's Draw");
 
-  // Sheets sync (background)
+  // Sheets sync (background) — fold vendor/category into the description so the existing sheet columns don't need to change
+  const sheetsDesc = vendor ? `[${CAT_NAMES[category] || category || 'Personal Expense'}] ${vendor}${desc ? ' — ' + desc : ''}` : desc;
   doDrawSync(docRef.id, {
-    date, partner, drawType, desc,
+    date, partner, drawType, desc: sheetsDesc,
     amountOut: String(amountOut), amountRepaid: String(amountRepaid),
     paymentMethod, notes
   });
@@ -1110,7 +1140,7 @@ async function doSheetsSync(docId, type, data) {
 }
 
 // ── DRAW UPLOAD (Cloudinary + Drive) ──
-async function doDrawUpload(docId, file, partner, date) {
+async function doDrawUpload(docId, file, partner, date, driveCategory) {
   let imageUrl = null;
   try {
     let blob;
@@ -1129,7 +1159,7 @@ async function doDrawUpload(docId, file, partner, date) {
   if (SCRIPT_URL && imageUrl) {
     const params = new URLSearchParams({
       action: 'drive',
-      url: imageUrl, category: "Owner's Draw", vendor: partner || "Owner's Draw", date
+      url: imageUrl, category: driveCategory || "Owner's Draw", vendor: partner || "Owner's Draw", date
     });
     fetch(`${SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
   }
@@ -1224,8 +1254,8 @@ function buildList() {
       d.innerHTML = `
         <div class="receipt-dot" style="background:var(--purple-light)">💜</div>
         <div class="receipt-info">
-          <div class="receipt-vendor">${esc(r.partner || 'Unknown')} — ${esc(r.drawType || 'Draw')}</div>
-          <div class="receipt-meta">Owner's Draw · ${fmtDate(r.date)}${r.desc ? ' · ' + esc(r.desc) : ''}${r.imageUrl ? ' · 📎' : ''}</div>
+          <div class="receipt-vendor">${r.vendor ? esc(r.vendor) : esc(r.partner || 'Unknown')} — ${esc(r.drawType || 'Draw')}</div>
+          <div class="receipt-meta">Owner's Draw · ${fmtDate(r.date)}${r.vendor ? ' · ' + esc(r.partner||'') : ''}${r.desc ? ' · ' + esc(r.desc) : ''}${r.imageUrl ? ' · 📎' : ''}</div>
         </div>
         <div class="receipt-right">
           <div class="receipt-amount" style="color:var(--purple)">-$${Number(r.amountOut || 0).toFixed(2)}</div>
@@ -1333,12 +1363,15 @@ function openDrawModal(r) {
     <div class="modal-header">
       <div class="modal-icon" style="background:var(--purple-light)">💜</div>
       <div>
-        <div class="modal-vendor">${esc(r.partner || 'Unknown')} — Owner's Draw</div>
+        <div class="modal-vendor">${r.vendor ? esc(r.vendor) : esc(r.partner || 'Unknown')} — Owner's Draw</div>
         <div class="modal-cat-label">${esc(r.drawType || '')} · ${fmtDate(r.date)}</div>
       </div>
     </div>
     <div class="modal-amount" style="color:var(--purple)">$${Number(r.amountOut || 0).toFixed(2)} <span>amount out</span></div>
     ${r.imageUrl ? `<img class="modal-img" src="${esc(r.imageUrl)}" onclick="openFullImg()" alt="Draw photo">` : ''}
+    ${r.vendor ? `<div class="modal-row"><span class="modal-row-label">Vendor</span><span class="modal-row-val">${esc(r.vendor)}</span></div>` : ''}
+    ${r.category ? `<div class="modal-row"><span class="modal-row-label">Category</span><span class="modal-row-val">${esc(CAT_NAMES[r.category]||r.category)}</span></div>` : ''}
+    ${r.vendor ? `<div class="modal-row"><span class="modal-row-label">Paid By</span><span class="modal-row-val">${esc(r.partner||'')}</span></div>` : ''}
     ${r.desc ? `<div class="modal-row"><span class="modal-row-label">Description</span><span class="modal-row-val">${esc(r.desc)}</span></div>` : ''}
     ${Number(r.amountRepaid || 0) > 0 ? `<div class="modal-row"><span class="modal-row-label">Amount Repaid</span><span class="modal-row-val">$${Number(r.amountRepaid).toFixed(2)}</span></div>` : ''}
     <div class="modal-row"><span class="modal-row-label">Net Draw</span><span class="modal-row-val" style="color:var(--purple)">$${(Number(r.amountOut||0) - Number(r.amountRepaid||0)).toFixed(2)}</span></div>
